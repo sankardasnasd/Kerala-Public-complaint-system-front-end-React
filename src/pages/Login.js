@@ -1,140 +1,4 @@
-// import React, { useState } from "react";
-// import "bootstrap/dist/css/bootstrap.min.css";
-// import API from "../services/Api";
 
-// const Login = () => {
-
-//   const [username, setUsername] = useState("");
-//   const [password, setPassword] = useState("");
-
-//   const handleLogin = async (e) => {
-//     e.preventDefault();
-
-//     const formData = new FormData();
-
-//     formData.append("username", username);
-//     formData.append("password", password);
-
-//     try {
-
-//       const response = await API.post(
-//         "login_page/",
-//         formData
-//       );
-
-//       console.log(response.data);
-
-//       if (response.data.status === "success") {
-
-//         alert(response.data.message || "Login successful");
-
-//         if (response.data.role === "admin") {
-//           window.location.href = "/admin";
-//         }
-
-//         else if (response.data.role === "staff") {
-//           window.location.href = "/staff";
-//         }
-
-//         else if (response.data.role === "user") {
-//           window.location.href = "/user";
-//         }
-
-//       } else {
-
-//         alert(response.data.message || "Login failed");
-
-//       }
-
-//     } catch (error) {
-
-//       console.log(error);
-
-//       alert(
-//         error.response?.data?.message ||
-//         "Unable to connect to Django server"
-//       );
-
-//     }
-//   };
-
-//   return (
-//     <div className="container mt-5">
-
-//       <div className="row justify-content-center">
-
-//         <div className="col-md-5">
-
-//           <div className="card shadow p-4">
-
-//             <h2 className="text-center mb-2">
-//               Public Complaint System
-//             </h2>
-
-//             <p className="text-center text-muted mb-4">
-//               Login to your account
-//             </p>
-
-//             <form onSubmit={handleLogin}>
-
-//               <div className="mb-3">
-
-//                 <label className="form-label">
-//                   Username
-//                 </label>
-
-//                 <input
-//                   type="text"
-//                   className="form-control"
-//                   placeholder="Enter username"
-//                   value={username}
-//                   onChange={(e) =>
-//                     setUsername(e.target.value)
-//                   }
-//                   required
-//                 />
-
-//               </div>
-
-//               <div className="mb-3">
-
-//                 <label className="form-label">
-//                   Password
-//                 </label>
-
-//                 <input
-//                   type="password"
-//                   className="form-control"
-//                   placeholder="Enter password"
-//                   value={password}
-//                   onChange={(e) =>
-//                     setPassword(e.target.value)
-//                   }
-//                   required
-//                 />
-
-//               </div>
-
-//               <button
-//                 type="submit"
-//                 className="btn btn-primary w-100"
-//               >
-//                 Login
-//               </button>
-
-//             </form>
-
-//           </div>
-
-//         </div>
-
-//       </div>
-
-//     </div>
-//   );
-// };
-
-// export default Login;
 
 
 import React, { useState } from "react";
@@ -145,39 +9,77 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-    const formData = new FormData();
-    formData.append("username", username);
-    formData.append("password", password);
+  const formData = new FormData();
+  formData.append("username", username);
+  formData.append("password", password);
 
-    try {
-      const response = await API.post("login_page/", formData);
+  try {
+    const response = await API.post("login_page/", formData);
 
-      console.log(response.data);
+    console.log(response.data);
 
-      if (response.data.status === "success") {
-        alert(response.data.message || "Login successful");
+    if (response.data.status === "success") {
 
-        if (response.data.role === "admin") {
-          window.location.href = "/admin";
-        } else if (response.data.role === "staff") {
-          window.location.href = "/staff";
-        } else if (response.data.role === "user") {
-          window.location.href = "/user";
-        }
-      } else {
-        alert(response.data.message || "Login failed");
+      alert(response.data.message || "Login successful");
+
+      // Store logged-in user details
+      localStorage.setItem(
+        "user_id",
+        response.data.user_id
+      );
+
+      localStorage.setItem(
+        "username",
+        response.data.username
+      );
+
+      localStorage.setItem(
+        "role",
+        response.data.role
+      );
+
+      console.log("Logged User ID:", response.data.user_id);
+
+      // Redirect according to role
+      if (response.data.role === "admin") {
+
+        window.location.href = "/admin";
+
+      } else if (response.data.role === "staff") {
+
+        window.location.href = "/staff";
+
+      } else if (response.data.role === "user") {
+
+        window.location.href = "/user";
+
       }
-    } catch (error) {
-      console.log(error);
-      alert(error.response?.data?.message || "Unable to connect to Django server");
-    } finally {
-      setLoading(false);
+
+    } else {
+
+      alert(
+        response.data.message || "Login failed"
+      );
     }
-  };
+
+  } catch (error) {
+
+    console.log(error);
+
+    alert(
+      error.response?.data?.message ||
+      "Unable to connect to Django server"
+    );
+
+  } finally {
+
+    setLoading(false);
+  }
+};
 
   return (
     <div className="pcs-shell">
