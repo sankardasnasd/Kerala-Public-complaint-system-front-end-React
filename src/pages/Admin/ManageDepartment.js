@@ -98,7 +98,7 @@ const NAV_ITEMS = [
   { href: "/admin/department", label: "Departments", icon: IconBuilding, active: true },
   { href: "/admin/categories", label: "Categories", icon: IconFolder },
   { href: "/admin/reports", label: "Reports", icon: IconChart },
-  { href: "/admin/notifications", label: "Notifications", icon: IconBell },
+  // { href: "/admin/notifications", label: "Notifications", icon: IconBell },
 ];
 
 const ManageDepartment = () => {
@@ -625,10 +625,10 @@ const ManageDepartment = () => {
           </div>
 
           <div className="dp-topnav-right">
-            <button className="dp-bell-btn" aria-label="Notifications">
+            {/* <button className="dp-bell-btn" aria-label="Notifications">
               <IconBell />
               <span className="dp-bell-dot" />
-            </button>
+            </button> */}
 
             <div className="dp-user-block">
               <div className="dp-user-name-top">Administrator</div>

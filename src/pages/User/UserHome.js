@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import API from "../../services/Api";
 
 const LampMark = ({ size = 22 }) => (
   <svg width={size} height={size * 1.26} viewBox="0 0 46 58" fill="none" aria-hidden="true">
@@ -16,48 +16,130 @@ const UserHome = () => {
   const navigate = useNavigate();
   const [navOpen, setNavOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [showComplaintForm, setShowComplaintForm] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
-  // Sample data – replace with real API data
-  const complaints = [
-    {
-      id: "CMP-2026-0142",
-      category: "Street Light",
-      description: "Street light not working near Ward 7 bus stop",
-      location: "Ward 7, Near Bus Stop",
-      status: "In Progress",
-      department: "Electrical",
-      date: "10 Aug 2026",
-      assigned: "Ravi Kumar",
-    },
-    {
-      id: "CMP-2026-0118",
-      category: "Waste Management",
-      description: "Garbage not collected for 4 days",
-      location: "Ward 3, Main Road",
-      status: "Resolved",
-      department: "Sanitation",
-      date: "02 Aug 2026",
-      assigned: "Anitha S",
-    },
-    {
-      id: "CMP-2026-0095",
-      category: "Road",
-      description: "Large pothole causing traffic issues",
-      location: "Ward 5, Market Road",
-      status: "Pending",
-      department: "Public Works",
-      date: "28 Jul 2026",
-      assigned: "—",
-    },
-  ];
+  // Complaints state
+  const [complaints, setComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const notifications = [
-    { id: 1, text: "Your complaint CMP-2026-0142 has been assigned to Electrical department", time: "2 hours ago", unread: true },
-    { id: 2, text: "Staff requested additional information for CMP-2026-0118", time: "1 day ago", unread: true },
-    { id: 3, text: "Complaint CMP-2026-0095 is under review", time: "3 days ago", unread: false },
-  ];
+  // Notifications state
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifLoading, setNotifLoading] = useState(true);
+
+  const userId = localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+
+  // ---------- Helper: format time ----------
+  const formatTime = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // ---------- Fetch Complaints ----------
+  useEffect(() => {
+    const fetchComplaints = async () => {
+      if (!userId) {
+        setError("User ID not found. Please login again.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await API.get(`my_complaints/?user_id=${userId}`);
+        const json = res.data;
+
+        if (json.status === "success") {
+          const mapped = json.data.map((c) => ({
+            id: c.id,
+            title: c.title || "",
+            category: c.category || "—",
+            description: c.description || "",
+            location: c.location || "—",
+            status: c.status || "Pending",
+            department: c.department || "—",
+            assigned: c.assigned_staff || "—",
+            priority: c.priority || "—",
+            admin_note: c.admin_note || "",
+            staff_note: c.staff_note || "",
+            image: c.image || null,
+            date: c.submitted_at
+              ? new Date(c.submitted_at).toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "—",
+            submitted_at: c.submitted_at,
+            assigned_at: c.assigned_at,
+            resolved_at: c.resolved_at,
+            closed_at: c.closed_at,
+          }));
+          setComplaints(mapped);
+        } else {
+          setError(json.message || "Failed to load complaints");
+        }
+      } catch (err) {
+        console.error(err);
+        setError(err.response?.data?.message || "Network error. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchComplaints();
+  }, [userId]);
+
+  // ---------- Fetch Notifications ----------
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!userId) {
+        setNotifLoading(false);
+        return;
+      }
+
+      try {
+        setNotifLoading(true);
+        const res = await API.get(`my_notifications/?user_id=${userId}`);
+        const json = res.data;
+
+        if (json.status === "success") {
+          setNotifications(json.data || []);
+          setUnreadCount(json.unread_count || 0);
+        }
+      } catch (err) {
+        console.error("Notifications error:", err);
+      } finally {
+        setNotifLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [userId]);
+
+  // ---------- Derived stats ----------
+  const total = complaints.length;
+  const inProgress = complaints.filter((c) => c.status === "In Progress").length;
+  const resolved = complaints.filter((c) => c.status === "Resolved").length;
+  const pending = complaints.filter((c) => c.status === "Pending").length;
 
   const statusColor = (status) => {
     if (status === "Resolved") return "var(--pcs-mid-green)";
@@ -286,6 +368,16 @@ const UserHome = () => {
           font-size: 15px;
         }
 
+        .pcs-badge-count {
+          background: var(--pcs-laterite);
+          color: white;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 7px;
+          border-radius: 999px;
+          margin-left: auto;
+        }
+
         /* -------- CONTENT -------- */
         .pcs-content {
           min-width: 0;
@@ -393,71 +485,6 @@ const UserHome = () => {
           white-space: nowrap;
         }
 
-        /* Form */
-        .pcs-field {
-          margin-bottom: 16px;
-        }
-
-        .pcs-label {
-          display: block;
-          font-size: 12.5px;
-          font-weight: 600;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-          color: var(--pcs-deep-green);
-          margin-bottom: 6px;
-        }
-
-        .pcs-input, .pcs-select, .pcs-textarea {
-          width: 100%;
-          padding: 11px 13px;
-          font-size: 14px;
-          font-family: 'Work Sans', sans-serif;
-          border: 1.5px solid #DDE3DB;
-          border-radius: 9px;
-          background: #FFFEF9;
-          color: var(--pcs-ink);
-          transition: border-color 0.15s, box-shadow 0.15s;
-        }
-
-        .pcs-input:focus, .pcs-select:focus, .pcs-textarea:focus {
-          outline: none;
-          border-color: var(--pcs-gold);
-          box-shadow: 0 0 0 3px rgba(201, 154, 59, 0.15);
-        }
-
-        .pcs-textarea { resize: vertical; min-height: 90px; }
-
-        .pcs-form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 14px;
-        }
-
-        /* Notifications */
-        .pcs-notif-item {
-          display: flex;
-          gap: 12px;
-          padding: 12px 0;
-          border-bottom: 1px solid #F0EBE0;
-        }
-
-        .pcs-notif-item:last-child { border-bottom: none; }
-
-        .pcs-notif-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--pcs-laterite);
-          margin-top: 6px;
-          flex-shrink: 0;
-        }
-
-        .pcs-notif-dot.read { background: #C5CFC8; }
-
-        .pcs-notif-text { font-size: 13.5px; line-height: 1.45; }
-        .pcs-notif-time { font-size: 12px; color: var(--pcs-muted); margin-top: 3px; }
-
         /* Detail view */
         .pcs-detail-grid {
           display: grid;
@@ -557,12 +584,98 @@ const UserHome = () => {
 
         .pcs-star.active { color: var(--pcs-gold); }
 
-        /* Empty */
-        .pcs-empty {
+        /* Empty / Loading / Error */
+        .pcs-empty, .pcs-loading, .pcs-error {
           text-align: center;
           padding: 40px 20px;
           color: var(--pcs-muted);
           font-size: 14px;
+        }
+        .pcs-error { color: var(--pcs-laterite); }
+
+        /* Image in detail */
+        .pcs-complaint-image {
+          max-width: 100%;
+          max-height: 280px;
+          border-radius: 10px;
+          margin-top: 12px;
+          border: 1px solid #ECE7D9;
+        }
+
+        .pcs-input, .pcs-select, .pcs-textarea {
+          width: 100%;
+          padding: 11px 13px;
+          font-size: 14px;
+          font-family: 'Work Sans', sans-serif;
+          border: 1.5px solid #DDE3DB;
+          border-radius: 9px;
+          background: #FFFEF9;
+          color: var(--pcs-ink);
+        }
+
+        .pcs-field {
+          margin-bottom: 16px;
+        }
+
+        .pcs-label {
+          display: block;
+          font-size: 12.5px;
+          font-weight: 600;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+          color: var(--pcs-deep-green);
+          margin-bottom: 6px;
+        }
+
+        /* Notifications */
+        .pcs-notif-item {
+          display: flex;
+          gap: 12px;
+          padding: 14px 0;
+          border-bottom: 1px solid #F0EBE0;
+        }
+
+        .pcs-notif-item:last-child { border-bottom: none; }
+
+        .pcs-notif-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--pcs-laterite);
+          margin-top: 6px;
+          flex-shrink: 0;
+        }
+
+        .pcs-notif-dot.read { background: #C5CFC8; }
+
+        .pcs-notif-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--pcs-deep-green);
+          margin-bottom: 2px;
+        }
+
+        .pcs-notif-text {
+          font-size: 13.5px;
+          line-height: 1.45;
+          color: var(--pcs-ink);
+        }
+
+        .pcs-notif-time {
+          font-size: 12px;
+          color: var(--pcs-muted);
+          margin-top: 4px;
+        }
+
+        .pcs-notif-type {
+          display: inline-block;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 999px;
+          background: rgba(30, 92, 62, 0.1);
+          color: var(--pcs-mid-green);
+          margin-left: 8px;
         }
 
         /* -------- RESPONSIVE -------- */
@@ -584,7 +697,7 @@ const UserHome = () => {
             font-size: 13px;
           }
           .pcs-stats-row { grid-template-columns: repeat(2, 1fr); }
-          .pcs-form-row, .pcs-detail-grid { grid-template-columns: 1fr; }
+          .pcs-detail-grid { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 640px) {
@@ -625,11 +738,21 @@ const UserHome = () => {
           </button>
 
           <div className={`pcs-nav-links ${navOpen ? "open" : ""}`}>
-            <button type="button" onClick={() => setActiveTab("dashboard")}>Dashboard</button>
-            <button type="button" onClick={() => { setActiveTab("complaints"); setShowComplaintForm(false); }}>My Complaints</button>
-            <button type="button" onClick={() => setActiveTab("notifications")}>Notifications</button>
-            <button type="button" onClick={() => setActiveTab("profile")}>Profile</button>
-            <Link to="/login" className="pcs-btn pcs-btn-gold pcs-btn-sm">Logout</Link>
+            <button type="button" onClick={() => { setActiveTab("dashboard"); setSelectedComplaint(null); }}>
+              Dashboard
+            </button>
+            <button type="button" onClick={() => { setActiveTab("complaints"); setSelectedComplaint(null); }}>
+              My Complaints
+            </button>
+            <button type="button" onClick={() => setActiveTab("notifications")}>
+              Notifications {unreadCount > 0 && `(${unreadCount})`}
+            </button>
+            <button type="button" onClick={() => navigate("/user/profile")}>
+              Profile
+            </button>
+            <Link to="/login" className="pcs-btn pcs-btn-gold pcs-btn-sm">
+              Logout
+            </Link>
           </div>
         </div>
       </nav>
@@ -651,65 +774,66 @@ const UserHome = () => {
             <span className="pcs-side-icon">🏠</span> Dashboard
           </button>
 
+          <button
+            className="pcs-side-link"
+            onClick={() => navigate("/user/submit-complaint")}
+          >
+            <span className="pcs-side-icon">📝</span> Submit Complaint
+          </button>
 
           <button
-  className="pcs-side-link"
-  onClick={() => navigate("/user/submit-complaint")}
->
-  📝 Submit Complaint
-</button>
+            className={`pcs-side-link ${activeTab === "complaints" ? "active" : ""}`}
+            onClick={() => { setActiveTab("complaints"); setSelectedComplaint(null); }}
+          >
+            <span className="pcs-side-icon">📋</span> My Complaints
+          </button>
 
-<button
-  className="pcs-side-link"
-  onClick={() => navigate("/user/my-complaints")}
->
-  📋 My Complaints
-</button>
-         
           <button
             className={`pcs-side-link ${activeTab === "notifications" ? "active" : ""}`}
             onClick={() => setActiveTab("notifications")}
           >
             <span className="pcs-side-icon">🔔</span> Notifications
+            {unreadCount > 0 && (
+              <span className="pcs-badge-count">{unreadCount}</span>
+            )}
           </button>
 
-
           <button
-  className={`pcs-side-link ${
-    activeTab === "profile" ? "active" : ""
-  }`}
-  onClick={() => navigate("/user/profile")}
->
-  <span className="pcs-side-icon">👤</span>
-  Profile
-</button>
-         
+            className={`pcs-side-link ${activeTab === "profile" ? "active" : ""}`}
+            onClick={() => navigate("/user/profile")}
+          >
+            <span className="pcs-side-icon">👤</span> Profile
+          </button>
         </aside>
 
         {/* Content Area */}
         <div className="pcs-content">
 
+          {/* ========== LOADING / ERROR ========== */}
+          {loading && <div className="pcs-loading">Loading your complaints...</div>}
+          {error && !loading && <div className="pcs-error">{error}</div>}
+
           {/* ========== DASHBOARD ========== */}
-          {activeTab === "dashboard" && !selectedComplaint && (
+          {!loading && !error && activeTab === "dashboard" && !selectedComplaint && (
             <>
               <h1 className="pcs-page-title">Welcome back</h1>
               <p className="pcs-page-sub">Here’s an overview of your complaints and recent activity.</p>
 
               <div className="pcs-stats-row">
                 <div className="pcs-stat">
-                  <div className="pcs-stat-num" style={{ color: "var(--pcs-deep-green)" }}>3</div>
+                  <div className="pcs-stat-num" style={{ color: "var(--pcs-deep-green)" }}>{total}</div>
                   <div className="pcs-stat-label">Total Complaints</div>
                 </div>
                 <div className="pcs-stat">
-                  <div className="pcs-stat-num" style={{ color: "var(--pcs-gold)" }}>1</div>
+                  <div className="pcs-stat-num" style={{ color: "var(--pcs-gold)" }}>{inProgress}</div>
                   <div className="pcs-stat-label">In Progress</div>
                 </div>
                 <div className="pcs-stat">
-                  <div className="pcs-stat-num" style={{ color: "var(--pcs-mid-green)" }}>1</div>
+                  <div className="pcs-stat-num" style={{ color: "var(--pcs-mid-green)" }}>{resolved}</div>
                   <div className="pcs-stat-label">Resolved</div>
                 </div>
                 <div className="pcs-stat">
-                  <div className="pcs-stat-num" style={{ color: "var(--pcs-laterite)" }}>1</div>
+                  <div className="pcs-stat-num" style={{ color: "var(--pcs-laterite)" }}>{pending}</div>
                   <div className="pcs-stat-label">Pending</div>
                 </div>
               </div>
@@ -717,95 +841,84 @@ const UserHome = () => {
               <div className="pcs-card">
                 <div className="pcs-card-title">
                   Recent Complaints
-                  <button className="pcs-btn pcs-btn-primary pcs-btn-sm" onClick={() => { setActiveTab("submit"); setShowComplaintForm(true); }}>
+                  <button
+                    className="pcs-btn pcs-btn-primary pcs-btn-sm"
+                    onClick={() => navigate("/user/submit-complaint")}
+                  >
                     + New Complaint
                   </button>
                 </div>
 
-                {complaints.map((c) => (
-                  <div
-                    key={c.id}
-                    className="pcs-complaint-item"
-                    onClick={() => { setSelectedComplaint(c); setActiveTab("complaints"); }}
-                  >
-                    <div>
-                      <div className="pcs-cmp-id">{c.id}</div>
-                      <div className="pcs-cmp-desc">{c.description}</div>
-                      <div className="pcs-cmp-meta">{c.category} · {c.location} · {c.date}</div>
+                {complaints.length === 0 ? (
+                  <div className="pcs-empty">No complaints yet.</div>
+                ) : (
+                  complaints.slice(0, 5).map((c) => (
+                    <div
+                      key={c.id}
+                      className="pcs-complaint-item"
+                      onClick={() => {
+                        setSelectedComplaint(c);
+                        setActiveTab("complaints");
+                      }}
+                    >
+                      <div>
+                        <div className="pcs-cmp-id">
+                          #{c.id} {c.title && `· ${c.title}`}
+                        </div>
+                        <div className="pcs-cmp-desc">{c.description}</div>
+                        <div className="pcs-cmp-meta">
+                          {c.category} · {c.location} · {c.date}
+                        </div>
+                      </div>
+                      <span
+                        className="pcs-status-badge"
+                        style={{ background: statusColor(c.status) }}
+                      >
+                        {c.status}
+                      </span>
                     </div>
-                    <span className="pcs-status-badge" style={{ background: statusColor(c.status) }}>
-                      {c.status}
+                  ))
+                )}
+              </div>
+
+              {/* Latest Notifications */}
+              <div className="pcs-card">
+                <div className="pcs-card-title">
+                  Latest Notifications
+                  {unreadCount > 0 && (
+                    <span style={{ fontSize: "13px", color: "var(--pcs-laterite)", fontWeight: 600 }}>
+                      {unreadCount} unread
                     </span>
-                  </div>
-                ))}
-              </div>
+                  )}
+                </div>
 
-              <div className="pcs-card">
-                <div className="pcs-card-title">Latest Notifications</div>
-                {notifications.slice(0, 3).map((n) => (
-                  <div key={n.id} className="pcs-notif-item">
-                    <div className={`pcs-notif-dot ${n.unread ? "" : "read"}`} />
-                    <div>
-                      <div className="pcs-notif-text">{n.text}</div>
-                      <div className="pcs-notif-time">{n.time}</div>
+                {notifLoading ? (
+                  <div className="pcs-empty">Loading notifications...</div>
+                ) : notifications.length === 0 ? (
+                  <div className="pcs-empty">No notifications yet.</div>
+                ) : (
+                  notifications.slice(0, 4).map((n) => (
+                    <div key={n.id} className="pcs-notif-item">
+                      <div className={`pcs-notif-dot ${n.is_read ? "read" : ""}`} />
+                      <div>
+                        <div className="pcs-notif-title">
+                          {n.title}
+                          {n.notification_type && (
+                            <span className="pcs-notif-type">{n.notification_type}</span>
+                          )}
+                        </div>
+                        <div className="pcs-notif-text">{n.message}</div>
+                        <div className="pcs-notif-time">{formatTime(n.created_at)}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* ========== SUBMIT COMPLAINT ========== */}
-          {(activeTab === "submit" || showComplaintForm) && !selectedComplaint && (
-            <>
-              <h1 className="pcs-page-title">Submit Complaint</h1>
-              <p className="pcs-page-sub">Describe the issue clearly so it can be routed to the right department.</p>
-
-              <div className="pcs-card">
-                <form onSubmit={(e) => { e.preventDefault(); alert("Complaint submitted (demo)"); setShowComplaintForm(false); setActiveTab("complaints"); }}>
-                  <div className="pcs-form-row">
-                    <div className="pcs-field">
-                      <label className="pcs-label">Category</label>
-                      <select className="pcs-select" required>
-                        <option value="">Select category</option>
-                        <option>Street Light</option>
-                        <option>Waste Management</option>
-                        <option>Road / Pothole</option>
-                        <option>Water Supply</option>
-                        <option>Drainage</option>
-                        <option>Public Toilet</option>
-                        <option>Other</option>
-                      </select>
-                    </div>
-                    <div className="pcs-field">
-                      <label className="pcs-label">Location</label>
-                      <input className="pcs-input" type="text" placeholder="Ward, landmark or area" required />
-                    </div>
-                  </div>
-
-                  <div className="pcs-field">
-                    <label className="pcs-label">Description</label>
-                    <textarea className="pcs-textarea" placeholder="Describe the issue in detail..." required />
-                  </div>
-
-                  <div className="pcs-field">
-                    <label className="pcs-label">Upload Image / Document</label>
-                    <input className="pcs-input" type="file" accept="image/*,.pdf" />
-                  </div>
-
-                  <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
-                    <button type="submit" className="pcs-btn pcs-btn-primary">Submit Complaint</button>
-                    <button type="button" className="pcs-btn pcs-btn-outline" onClick={() => { setShowComplaintForm(false); setActiveTab("dashboard"); }}>
-                      Cancel
-                    </button>
-                  </div>
-                </form>
+                  ))
+                )}
               </div>
             </>
           )}
 
           {/* ========== COMPLAINT LIST ========== */}
-          {activeTab === "complaints" && !selectedComplaint && !showComplaintForm && (
+          {!loading && !error && activeTab === "complaints" && !selectedComplaint && (
             <>
               <h1 className="pcs-page-title">My Complaints</h1>
               <p className="pcs-page-sub">View history, track status and take further action.</p>
@@ -813,7 +926,10 @@ const UserHome = () => {
               <div className="pcs-card">
                 <div className="pcs-card-title">
                   Complaint History
-                  <button className="pcs-btn pcs-btn-primary pcs-btn-sm" onClick={() => { setActiveTab("submit"); setShowComplaintForm(true); }}>
+                  <button
+                    className="pcs-btn pcs-btn-primary pcs-btn-sm"
+                    onClick={() => navigate("/user/submit-complaint")}
+                  >
                     + New
                   </button>
                 </div>
@@ -828,13 +944,18 @@ const UserHome = () => {
                       onClick={() => setSelectedComplaint(c)}
                     >
                       <div>
-                        <div className="pcs-cmp-id">{c.id}</div>
+                        <div className="pcs-cmp-id">
+                          #{c.id} {c.title && `· ${c.title}`}
+                        </div>
                         <div className="pcs-cmp-desc">{c.description}</div>
                         <div className="pcs-cmp-meta">
                           {c.category} · {c.department} · {c.date}
                         </div>
                       </div>
-                      <span className="pcs-status-badge" style={{ background: statusColor(c.status) }}>
+                      <span
+                        className="pcs-status-badge"
+                        style={{ background: statusColor(c.status) }}
+                      >
                         {c.status}
                       </span>
                     </div>
@@ -855,13 +976,19 @@ const UserHome = () => {
                 ← Back to list
               </button>
 
-              <h1 className="pcs-page-title">{selectedComplaint.id}</h1>
+              <h1 className="pcs-page-title">
+                #{selectedComplaint.id}
+                {selectedComplaint.title ? ` · ${selectedComplaint.title}` : ""}
+              </h1>
               <p className="pcs-page-sub">{selectedComplaint.description}</p>
 
               <div className="pcs-card">
                 <div className="pcs-card-title">
                   Complaint Details
-                  <span className="pcs-status-badge" style={{ background: statusColor(selectedComplaint.status) }}>
+                  <span
+                    className="pcs-status-badge"
+                    style={{ background: statusColor(selectedComplaint.status) }}
+                  >
                     {selectedComplaint.status}
                   </span>
                 </div>
@@ -876,7 +1003,7 @@ const UserHome = () => {
                     <div className="pcs-detail-value">{selectedComplaint.location}</div>
                   </div>
                   <div>
-                    <div className="pcs-detail-label">Assigned Department</div>
+                    <div className="pcs-detail-label">Department</div>
                     <div className="pcs-detail-value">{selectedComplaint.department}</div>
                   </div>
                   <div>
@@ -884,14 +1011,62 @@ const UserHome = () => {
                     <div className="pcs-detail-value">{selectedComplaint.assigned}</div>
                   </div>
                   <div>
+                    <div className="pcs-detail-label">Priority</div>
+                    <div className="pcs-detail-value">{selectedComplaint.priority}</div>
+                  </div>
+                  <div>
                     <div className="pcs-detail-label">Submitted On</div>
                     <div className="pcs-detail-value">{selectedComplaint.date}</div>
                   </div>
-                  <div>
-                    <div className="pcs-detail-label">Status</div>
-                    <div className="pcs-detail-value">{selectedComplaint.status}</div>
-                  </div>
+                  {selectedComplaint.assigned_at && (
+                    <div>
+                      <div className="pcs-detail-label">Assigned At</div>
+                      <div className="pcs-detail-value">
+                        {new Date(selectedComplaint.assigned_at).toLocaleString("en-IN")}
+                      </div>
+                    </div>
+                  )}
+                  {selectedComplaint.resolved_at && (
+                    <div>
+                      <div className="pcs-detail-label">Resolved At</div>
+                      <div className="pcs-detail-value">
+                        {new Date(selectedComplaint.resolved_at).toLocaleString("en-IN")}
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {selectedComplaint.image && (
+                  <div style={{ marginTop: "12px" }}>
+                    <div className="pcs-detail-label">Attached Image</div>
+                    <img
+                      src={selectedComplaint.image}
+                      alt="Complaint attachment"
+                      className="pcs-complaint-image"
+                    />
+                  </div>
+                )}
+
+                {(selectedComplaint.admin_note || selectedComplaint.staff_note) && (
+                  <div style={{ marginTop: "18px" }}>
+                    {selectedComplaint.admin_note && (
+                      <div style={{ marginBottom: "12px" }}>
+                        <div className="pcs-detail-label">Admin Note</div>
+                        <div className="pcs-detail-value" style={{ lineHeight: 1.5 }}>
+                          {selectedComplaint.admin_note}
+                        </div>
+                      </div>
+                    )}
+                    {selectedComplaint.staff_note && (
+                      <div>
+                        <div className="pcs-detail-label">Staff Note</div>
+                        <div className="pcs-detail-value" style={{ lineHeight: 1.5 }}>
+                          {selectedComplaint.staff_note}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="pcs-actions-row">
                   {selectedComplaint.status === "In Progress" && (
@@ -913,21 +1088,14 @@ const UserHome = () => {
                 </div>
               </div>
 
-              {/* Chat / Communication */}
               <div className="pcs-card">
                 <div className="pcs-card-title">Communication with Staff</div>
                 <div className="pcs-chat-box">
                   <div className="pcs-chat-msg staff">
-                    <div className="pcs-chat-bubble">We have received your complaint and assigned it to the Electrical team.</div>
-                    <div className="pcs-chat-meta">Staff · 10 Aug 2026, 11:20 AM</div>
-                  </div>
-                  <div className="pcs-chat-msg user">
-                    <div className="pcs-chat-bubble">Thank you. The light is still not working as of this morning.</div>
-                    <div className="pcs-chat-meta">You · 10 Aug 2026, 02:45 PM</div>
-                  </div>
-                  <div className="pcs-chat-msg staff">
-                    <div className="pcs-chat-bubble">Technician will visit tomorrow morning. Please keep the area accessible.</div>
-                    <div className="pcs-chat-meta">Staff · 11 Aug 2026, 09:10 AM</div>
+                    <div className="pcs-chat-bubble">
+                      We have received your complaint and assigned it to the relevant team.
+                    </div>
+                    <div className="pcs-chat-meta">Staff · system</div>
                   </div>
                 </div>
                 <div className="pcs-chat-input-row">
@@ -935,73 +1103,54 @@ const UserHome = () => {
                   <button className="pcs-btn pcs-btn-primary">Send</button>
                 </div>
               </div>
-
-              {/* Feedback (shown when resolved) */}
-              {selectedComplaint.status === "Resolved" && (
-                <div className="pcs-card">
-                  <div className="pcs-card-title">Feedback & Rating</div>
-                  <p style={{ fontSize: "13.5px", color: "var(--pcs-muted)", marginBottom: "8px" }}>
-                    How satisfied are you with the resolution?
-                  </p>
-                  <div className="pcs-stars">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <span key={s} className={`pcs-star ${s <= 4 ? "active" : ""}`}>★</span>
-                    ))}
-                  </div>
-                  <div className="pcs-field">
-                    <label className="pcs-label">Your feedback</label>
-                    <textarea className="pcs-textarea" placeholder="Share your experience (optional)" rows={3} />
-                  </div>
-                  <button className="pcs-btn pcs-btn-primary">Submit Feedback</button>
-                </div>
-              )}
-
-              {/* Resolution Details */}
-              {selectedComplaint.status === "Resolved" && (
-                <div className="pcs-card">
-                  <div className="pcs-card-title">Resolution Details</div>
-                  <div className="pcs-detail-grid">
-                    <div>
-                      <div className="pcs-detail-label">Resolved On</div>
-                      <div className="pcs-detail-value">08 Aug 2026</div>
-                    </div>
-                    <div>
-                      <div className="pcs-detail-label">Resolved By</div>
-                      <div className="pcs-detail-value">Anitha S (Sanitation)</div>
-                    </div>
-                  </div>
-                  <div style={{ marginTop: "10px" }}>
-                    <div className="pcs-detail-label">Resolution Note</div>
-                    <div className="pcs-detail-value" style={{ marginTop: "4px", lineHeight: 1.5 }}>
-                      Garbage collection schedule restored. Extra vehicle deployed for the area. Issue closed after verification.
-                    </div>
-                  </div>
-                </div>
-              )}
             </>
           )}
 
-          {/* ========== NOTIFICATIONS ========== */}
+          {/* ========== NOTIFICATIONS TAB ========== */}
           {activeTab === "notifications" && (
             <>
               <h1 className="pcs-page-title">Notifications</h1>
-              <p className="pcs-page-sub">Stay updated on the progress of your complaints.</p>
+              <p className="pcs-page-sub">
+                Stay updated on the progress of your complaints.
+                {unreadCount > 0 && (
+                  <span style={{ color: "var(--pcs-laterite)", fontWeight: 600 }}>
+                    {" "}• {unreadCount} unread
+                  </span>
+                )}
+              </p>
 
               <div className="pcs-card">
-                {notifications.map((n) => (
-                  <div key={n.id} className="pcs-notif-item">
-                    <div className={`pcs-notif-dot ${n.unread ? "" : "read"}`} />
-                    <div>
-                      <div className="pcs-notif-text">{n.text}</div>
-                      <div className="pcs-notif-time">{n.time}</div>
+                {notifLoading ? (
+                  <div className="pcs-empty">Loading notifications...</div>
+                ) : notifications.length === 0 ? (
+                  <div className="pcs-empty">No notifications yet.</div>
+                ) : (
+                  notifications.map((n) => (
+                    <div key={n.id} className="pcs-notif-item">
+                      <div className={`pcs-notif-dot ${n.is_read ? "read" : ""}`} />
+                      <div style={{ flex: 1 }}>
+                        <div className="pcs-notif-title">
+                          {n.title}
+                          {n.notification_type && (
+                            <span className="pcs-notif-type">{n.notification_type}</span>
+                          )}
+                        </div>
+                        <div className="pcs-notif-text">{n.message}</div>
+                        <div className="pcs-notif-time">
+                          {formatTime(n.created_at)}
+                          {n.complaint_id && (
+                            <span style={{ marginLeft: "10px", color: "var(--pcs-mid-green)" }}>
+                              • Complaint #{n.complaint_id}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </>
           )}
-
-       
         </div>
       </div>
     </div>

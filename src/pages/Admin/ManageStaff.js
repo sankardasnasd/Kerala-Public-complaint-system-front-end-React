@@ -86,7 +86,7 @@ const NAV_ITEMS = [
   { href: "/admin/department", label: "Departments", icon: IconBuilding },
   { href: "/admin/categories", label: "Categories", icon: IconFolder },
   { href: "/admin/reports", label: "Reports", icon: IconChart },
-  { href: "/admin/notifications", label: "Notifications", icon: IconBell },
+  // { href: "/admin/notifications", label: "Notifications", icon: IconBell },
 ];
 
 const ManageStaff = () => {
@@ -892,10 +892,10 @@ const ManageStaff = () => {
           </div>
 
           <div className="ms-topnav-right">
-            <button className="ms-bell-btn" aria-label="Notifications">
+            {/* <button className="ms-bell-btn" aria-label="Notifications">
               <IconBell />
               <span className="ms-bell-dot" />
-            </button>
+            </button> */}
 
             <div className="ms-user-block">
               <div className="ms-user-name-top">Administrator</div>

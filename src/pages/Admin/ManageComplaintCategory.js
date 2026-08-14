@@ -118,7 +118,7 @@ const NAV_ITEMS = [
   { href: "/admin/department", label: "Departments", icon: IconBuilding },
   { href: "/admin/categories", label: "Categories", icon: IconFolder, active: true },
   { href: "/admin/reports", label: "Reports", icon: IconChart },
-  { href: "/admin/notifications", label: "Notifications", icon: IconBell },
+  // { href: "/admin/notifications", label: "Notifications", icon: IconBell },
 ];
 
 const ManageComplaintCategory = () => {
@@ -718,10 +718,10 @@ const ManageComplaintCategory = () => {
           </div>
 
           <div className="mc-topnav-right">
-            <button className="mc-bell-btn" aria-label="Notifications">
+            {/* <button className="mc-bell-btn" aria-label="Notifications">
               <IconBell />
               <span className="mc-bell-dot" />
-            </button>
+            </button> */}
 
             <div className="mc-user-block">
               <div className="mc-user-name-top">Administrator</div>

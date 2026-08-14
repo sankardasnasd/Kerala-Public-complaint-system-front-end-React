@@ -15,6 +15,7 @@ import UserHome from "./pages/User/UserHome";
 import MyProfile from "./pages/User/MyProfile";
 import SubmitComplaint from "./pages/User/SubmitComplaint";
 import MyComplaints from "./pages/User/MyComplaints";
+import ManageNotifications from "./pages/Admin/ManageNotifications";
 
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
           <Route path="/admin/view_user_details" element={<ViewUsers />}/>
           <Route path="/admin/categories" element={<ManageComplaintCategory />}/>
           <Route path="/admin/complaints" element={<ViewComplaints />}/>
+          <Route path="/admin/notifications" element={<ManageNotifications />}/>
 
           
           <Route path="/user" element={<UserHome />}/>

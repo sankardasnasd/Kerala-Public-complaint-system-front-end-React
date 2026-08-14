@@ -1,8 +1,20 @@
 import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import API from "../../services/Api";
-import "bootstrap/dist/css/bootstrap.min.css";
+
+const LampMark = ({ size = 22 }) => (
+  <svg width={size} height={size * 1.26} viewBox="0 0 46 58" fill="none" aria-hidden="true">
+    <path d="M23 4C23 4 15 14 15 22C15 27.5 18.5 31 23 31C27.5 31 31 27.5 31 22C31 14 23 4 23 4Z" fill="var(--pcs-gold-soft)" />
+    <path d="M23 10C23 10 19 16 19 21C19 24 20.8 26 23 26C25.2 26 27 24 27 21C27 16 23 10 23 10Z" fill="#FFE8A3" />
+    <rect x="21.4" y="30" width="3.2" height="14" fill="var(--pcs-gold)" />
+    <path d="M10 44C10 40 15.5 38 23 38C30.5 38 36 40 36 44C36 48 30.5 47 23 47C15.5 47 10 48 10 44Z" fill="var(--pcs-gold)" />
+    <ellipse cx="23" cy="44" rx="13" ry="3" fill="var(--pcs-deep-green)" opacity="0.35" />
+  </svg>
+);
 
 const MyProfile = () => {
+  const navigate = useNavigate();
+  const [navOpen, setNavOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({
     name: "",
@@ -11,6 +23,7 @@ const MyProfile = () => {
     address: "",
   });
   const [profileImage, setProfileImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -55,16 +68,14 @@ const MyProfile = () => {
     });
   };
 
-  // ==============================
-  // IMAGE
-  // ==============================
   const handleImageChange = (e) => {
-    setProfileImage(e.target.files[0]);
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(file);
+      setPreviewImage(URL.createObjectURL(file));
+    }
   };
 
-  // ==============================
-  // UPDATE PROFILE
-  // ==============================
   const handleUpdate = async (e) => {
     e.preventDefault();
 
@@ -84,12 +95,13 @@ const MyProfile = () => {
       const response = await API.post("edit_my_profile/", formData);
 
       if (response.data.status === "success") {
-        alert(response.data.message);
+        alert(response.data.message || "Profile updated successfully");
         setEditMode(false);
         setProfileImage(null);
+        setPreviewImage(null);
         await loadProfile();
       } else {
-        alert(response.data.message);
+        alert(response.data.message || "Update failed");
       }
     } catch (error) {
       console.log(error);
@@ -105,307 +117,568 @@ const MyProfile = () => {
   const handleCancel = () => {
     setEditMode(false);
     setProfileImage(null);
+    setPreviewImage(null);
     setForm({
-      name: profile.name || "",
-      email: profile.email || "",
-      phone: profile.phone || "",
-      address: profile.address || "",
+      name: profile?.name || "",
+      email: profile?.email || "",
+      phone: profile?.phone || "",
+      address: profile?.address || "",
     });
   };
 
-  // ==============================
-  // LOADING
-  // ==============================
-  if (loading) {
-    return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: "#f0f4f8" }}>
-        <div className="text-center">
-          <div className="spinner-border text-primary" style={{ width: "3rem", height: "3rem" }}></div>
-          <p className="mt-3 text-muted fw-medium">Loading profile...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ==============================
-  // PROFILE NOT FOUND
-  // ==============================
-  if (!profile) {
-    return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: "#f0f4f8" }}>
-        <div className="alert alert-danger shadow-sm">Profile not found.</div>
-      </div>
-    );
-  }
-
-  // ==============================
-  // MAIN PAGE
-  // ==============================
   return (
-    <div
-      className="min-vh-100"
-      style={{
-        backgroundColor: "#f0f4f8",
-        paddingTop: "48px",
-        paddingBottom: "48px",
-      }}
-    >
-      <div className="container">
-        {/* PAGE HEADER */}
-        <div className="mb-4">
-          <h2 className="fw-bold mb-1" style={{ color: "#1e293b" }}>
-            My Profile
-          </h2>
-          <p className="text-muted mb-0">Manage your Public Complaint System account</p>
-        </div>
+    <div className="pcs-page">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&display=swap');
 
-        <div className="row justify-content-center">
-          <div className="col-lg-8">
-            <div
-              className="card border-0"
-              style={{
-                borderRadius: "16px",
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
-                overflow: "hidden",
-              }}
-            >
-              {/* HEADER */}
-              <div
-                className="card-header border-0 p-4"
-                style={{
-                  background: "linear-gradient(135deg, #3b82f6, #2563eb)",
-                  color: "white",
-                }}
-              >
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <h4 className="mb-1 fw-semibold">Personal Information</h4>
-                    <small style={{ opacity: 0.9 }}>Your registered account details</small>
-                  </div>
+        :root {
+          --pcs-deep-green: #10331F;
+          --pcs-mid-green: #1E5C3E;
+          --pcs-gold: #C99A3B;
+          --pcs-gold-soft: #E4C878;
+          --pcs-cream: #FBF6EC;
+          --pcs-laterite: #B0512B;
+          --pcs-ink: #16241C;
+          --pcs-muted: #5E6E64;
+        }
 
-                  {!editMode && (
-                    <button
-                      className="btn btn-light btn-sm px-3"
-                      style={{
-                        borderRadius: "8px",
-                        fontWeight: 500,
-                      }}
-                      onClick={() => setEditMode(true)}
-                    >
-                      ✎ Edit Profile
-                    </button>
-                  )}
-                </div>
-              </div>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-              <div className="card-body p-4 p-md-5">
-                {/* PROFILE IMAGE */}
-                <div className="text-center mb-5">
-                  {profile.profile_image ? (
-                    <img
-                      src={profile.profile_image}
-                      alt="Profile"
-                      className="rounded-circle shadow-sm"
-                      style={{
-                        width: "140px",
-                        height: "140px",
-                        objectFit: "cover",
-                        border: "4px solid #fff",
-                        boxShadow: "0 4px 12px rgba(59, 130, 246, 0.2)",
-                      }}
-                    />
-                  ) : (
-                    <div
-                      className="rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-sm"
-                      style={{
-                        width: "140px",
-                        height: "140px",
-                        fontSize: "52px",
-                        background: "linear-gradient(135deg, #3b82f6, #60a5fa)",
-                        color: "white",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {profile.name?.charAt(0)?.toUpperCase()}
-                    </div>
-                  )}
+        .pcs-page {
+          font-family: 'Work Sans', sans-serif;
+          color: var(--pcs-ink);
+          background: var(--pcs-cream);
+          min-height: 100vh;
+        }
 
-                  {!editMode && (
-                    <h4 className="mt-3 mb-1 fw-semibold" style={{ color: "#1e293b" }}>
-                      {profile.name}
-                    </h4>
-                  )}
-                  <p className="text-muted mb-0">@{profile.username}</p>
-                </div>
+        .pcs-page a { text-decoration: none; color: inherit; }
 
-                {/* ==========================
-                    VIEW PROFILE
-                ========================== */}
-                {!editMode && (
-                  <div className="row g-3">
-                    {[
-                      { label: "Full Name", value: profile.name },
-                      { label: "Username", value: profile.username },
-                      { label: "Email", value: profile.email },
-                      { label: "Phone", value: profile.phone },
-                      {
-                        label: "Address",
-                        value: profile.address || "Address not provided",
-                        fullWidth: true,
-                      },
-                      { label: "Registered On", value: profile.created_at },
-                    ].map((item, index) => (
-                      <div
-                        key={index}
-                        className={item.fullWidth ? "col-12" : "col-md-6"}
-                      >
-                        <div
-                          className="p-3 h-100"
-                          style={{
-                            backgroundColor: "#f8fafc",
-                            borderRadius: "12px",
-                            border: "1px solid #e2e8f0",
-                          }}
-                        >
-                          <small className="text-muted d-block mb-1">{item.label}</small>
-                          <h6 className="mb-0 fw-medium" style={{ color: "#1e293b" }}>
-                            {item.value}
-                          </h6>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+        .pcs-container {
+          max-width: 900px;
+          margin: 0 auto;
+          padding: 0 24px;
+        }
 
-                {/* ==========================
-                    EDIT PROFILE
-                ========================== */}
-                {editMode && (
-                  <form onSubmit={handleUpdate}>
-                    {/* NAME */}
-                    <div className="mb-3">
-                      <label className="form-label fw-semibold" style={{ color: "#334155" }}>
-                        Full Name
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        className="form-control"
-                        value={form.name}
-                        onChange={handleChange}
-                        required
-                        style={{ borderRadius: "8px", padding: "10px 14px" }}
-                      />
-                    </div>
+        h1, h2, h3, h4 {
+          font-family: 'Fraunces', serif;
+        }
 
-                    {/* USERNAME */}
-                    <div className="mb-3">
-                      <label className="form-label fw-semibold" style={{ color: "#334155" }}>
-                        Username
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={profile.username}
-                        disabled
-                        style={{ borderRadius: "8px", padding: "10px 14px", backgroundColor: "#f1f5f9" }}
-                      />
-                      <small className="text-muted">Username cannot be changed.</small>
-                    </div>
+        /* -------- NAV -------- */
+        .pcs-nav {
+          background: var(--pcs-deep-green);
+          padding: 14px 0;
+          position: sticky;
+          top: 0;
+          z-index: 50;
+          box-shadow: 0 2px 14px rgba(16, 51, 31, 0.18);
+        }
 
-                    {/* EMAIL */}
-                    <div className="mb-3">
-                      <label className="form-label fw-semibold" style={{ color: "#334155" }}>
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        name="email"
-                        className="form-control"
-                        value={form.email}
-                        onChange={handleChange}
-                        required
-                        style={{ borderRadius: "8px", padding: "10px 14px" }}
-                      />
-                    </div>
+        .pcs-nav-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
 
-                    {/* PHONE */}
-                    <div className="mb-3">
-                      <label className="form-label fw-semibold" style={{ color: "#334155" }}>
-                        Phone
-                      </label>
-                      <input
-                        type="text"
-                        name="phone"
-                        className="form-control"
-                        value={form.phone}
-                        onChange={handleChange}
-                        required
-                        style={{ borderRadius: "8px", padding: "10px 14px" }}
-                      />
-                    </div>
+        .pcs-brand-link {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: var(--pcs-cream);
+          font-family: 'Fraunces', serif;
+          font-weight: 600;
+          font-size: 17px;
+        }
 
-                    {/* ADDRESS */}
-                    <div className="mb-3">
-                      <label className="form-label fw-semibold" style={{ color: "#334155" }}>
-                        Address
-                      </label>
-                      <textarea
-                        name="address"
-                        className="form-control"
-                        rows="3"
-                        value={form.address}
-                        onChange={handleChange}
-                        style={{ borderRadius: "8px", padding: "10px 14px" }}
-                      />
-                    </div>
+        .pcs-nav-toggle {
+          display: none;
+          background: none;
+          border: 1px solid rgba(228, 200, 120, 0.4);
+          border-radius: 7px;
+          padding: 7px 10px;
+          color: var(--pcs-gold-soft);
+          font-size: 18px;
+          cursor: pointer;
+        }
 
-                    {/* IMAGE */}
-                    <div className="mb-4">
-                      <label className="form-label fw-semibold" style={{ color: "#334155" }}>
-                        Change Profile Image
-                      </label>
-                      <input
-                        type="file"
-                        className="form-control"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        style={{ borderRadius: "8px", padding: "10px 14px" }}
-                      />
-                    </div>
+        .pcs-nav-links {
+          display: flex;
+          align-items: center;
+          gap: 22px;
+        }
 
-                    {/* BUTTONS */}
-                    <div className="d-flex gap-2 pt-2">
-                      <button
-                        type="submit"
-                        className="btn px-4"
-                        disabled={saving}
-                        style={{
-                          backgroundColor: "#3b82f6",
-                          color: "white",
-                          borderRadius: "8px",
-                          fontWeight: 500,
-                          border: "none",
-                        }}
-                      >
-                        {saving ? "Saving..." : "💾 Save Changes"}
-                      </button>
+        .pcs-nav-links a, .pcs-nav-links button {
+          color: rgba(251, 246, 236, 0.82);
+          font-size: 14px;
+          font-weight: 500;
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-family: inherit;
+        }
 
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary px-4"
-                        onClick={handleCancel}
-                        style={{ borderRadius: "8px", fontWeight: 500 }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            </div>
+        .pcs-nav-links a:hover, .pcs-nav-links button:hover {
+          color: var(--pcs-gold-soft);
+        }
+
+        .pcs-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 9px 18px;
+          border-radius: 8px;
+          font-size: 13.5px;
+          font-weight: 600;
+          border: 1.5px solid transparent;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          font-family: inherit;
+        }
+
+        .pcs-btn-gold {
+          background: var(--pcs-gold);
+          color: var(--pcs-deep-green);
+        }
+        .pcs-btn-gold:hover { background: var(--pcs-gold-soft); }
+
+        .pcs-btn-primary {
+          background: var(--pcs-deep-green);
+          color: var(--pcs-gold-soft);
+        }
+        .pcs-btn-primary:hover { background: var(--pcs-mid-green); }
+
+        .pcs-btn-outline {
+          background: transparent;
+          color: var(--pcs-deep-green);
+          border-color: var(--pcs-deep-green);
+        }
+        .pcs-btn-outline:hover {
+          background: var(--pcs-deep-green);
+          color: var(--pcs-gold-soft);
+        }
+
+        .pcs-btn-sm {
+          padding: 6px 12px;
+          font-size: 12.5px;
+        }
+
+        /* -------- CONTENT -------- */
+        .pcs-content-wrap {
+          padding: 36px 0 60px;
+        }
+
+        .pcs-page-title {
+          font-size: 26px;
+          font-weight: 700;
+          color: var(--pcs-deep-green);
+          margin-bottom: 6px;
+        }
+
+        .pcs-page-sub {
+          font-size: 14px;
+          color: var(--pcs-muted);
+          margin-bottom: 28px;
+        }
+
+        /* Card */
+        .pcs-card {
+          background: #FFFFFF;
+          border: 1px solid #ECE7D9;
+          border-radius: 14px;
+          padding: 28px;
+          margin-bottom: 20px;
+        }
+
+        .pcs-card-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 24px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #ECE7D9;
+        }
+
+        .pcs-card-title {
+          font-size: 18px;
+          font-weight: 600;
+          color: var(--pcs-deep-green);
+        }
+
+        /* Profile image */
+        .pcs-profile-avatar-wrap {
+          text-align: center;
+          margin-bottom: 28px;
+        }
+
+        .pcs-profile-avatar {
+          width: 130px;
+          height: 130px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 3px solid var(--pcs-gold);
+          box-shadow: 0 4px 14px rgba(16, 51, 31, 0.12);
+        }
+
+        .pcs-profile-avatar-placeholder {
+          width: 130px;
+          height: 130px;
+          border-radius: 50%;
+          background: var(--pcs-cream);
+          border: 3px solid var(--pcs-gold);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto;
+          font-size: 48px;
+          font-weight: 600;
+          color: var(--pcs-deep-green);
+          font-family: 'Fraunces', serif;
+        }
+
+        .pcs-profile-name {
+          font-size: 20px;
+          font-weight: 600;
+          color: var(--pcs-deep-green);
+          margin-top: 14px;
+        }
+
+        .pcs-profile-username {
+          font-size: 13.5px;
+          color: var(--pcs-muted);
+          margin-top: 2px;
+        }
+
+        /* Info grid */
+        .pcs-info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+
+        .pcs-info-item {
+          background: var(--pcs-cream);
+          border: 1px solid #ECE7D9;
+          border-radius: 10px;
+          padding: 14px 16px;
+        }
+
+        .pcs-info-item.full {
+          grid-column: 1 / -1;
+        }
+
+        .pcs-info-label {
+          font-size: 11.5px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          color: var(--pcs-muted);
+          margin-bottom: 4px;
+        }
+
+        .pcs-info-value {
+          font-size: 14.5px;
+          font-weight: 500;
+          color: var(--pcs-ink);
+        }
+
+        /* Form */
+        .pcs-field {
+          margin-bottom: 18px;
+        }
+
+        .pcs-label {
+          display: block;
+          font-size: 12.5px;
+          font-weight: 600;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+          color: var(--pcs-deep-green);
+          margin-bottom: 6px;
+        }
+
+        .pcs-input, .pcs-textarea {
+          width: 100%;
+          padding: 11px 13px;
+          font-size: 14px;
+          font-family: 'Work Sans', sans-serif;
+          border: 1.5px solid #DDE3DB;
+          border-radius: 9px;
+          background: #FFFEF9;
+          color: var(--pcs-ink);
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .pcs-input:focus, .pcs-textarea:focus {
+          outline: none;
+          border-color: var(--pcs-gold);
+          box-shadow: 0 0 0 3px rgba(201, 154, 59, 0.15);
+        }
+
+        .pcs-input:disabled {
+          background: #F5F2E9;
+          color: var(--pcs-muted);
+          cursor: not-allowed;
+        }
+
+        .pcs-textarea {
+          resize: vertical;
+          min-height: 90px;
+        }
+
+        .pcs-help-text {
+          font-size: 12px;
+          color: var(--pcs-muted);
+          margin-top: 4px;
+        }
+
+        .pcs-actions-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: 10px;
+        }
+
+        /* Loading / Error */
+        .pcs-loading, .pcs-error {
+          text-align: center;
+          padding: 80px 20px;
+          color: var(--pcs-muted);
+          font-size: 15px;
+        }
+        .pcs-error { color: var(--pcs-laterite); }
+
+        /* -------- RESPONSIVE -------- */
+        @media (max-width: 640px) {
+          .pcs-nav-toggle { display: inline-block; }
+          .pcs-nav-links {
+            position: absolute;
+            top: 56px;
+            left: 0;
+            right: 0;
+            background: var(--pcs-deep-green);
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            padding: 14px 20px 18px;
+            display: none;
+            border-top: 1px solid rgba(228, 200, 120, 0.2);
+          }
+          .pcs-nav-links.open { display: flex; }
+          .pcs-info-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
+
+      {/* ================= NAVBAR ================= */}
+      <nav className="pcs-nav">
+        <div className="pcs-container pcs-nav-row">
+          <Link className="pcs-brand-link" to="/">
+            <LampMark />
+            Public Complaint System
+          </Link>
+
+          <button
+            className="pcs-nav-toggle"
+            type="button"
+            onClick={() => setNavOpen((o) => !o)}
+            aria-label="Toggle menu"
+          >
+            ☰
+          </button>
+
+          <div className={`pcs-nav-links ${navOpen ? "open" : ""}`}>
+            <button type="button" onClick={() => navigate("/user/home")}>
+              Dashboard
+            </button>
+            <button type="button" onClick={() => navigate("/user/my-complaints")}>
+              My Complaints
+            </button>
+            <button type="button" onClick={() => navigate("/user/submit-complaint")}>
+              Submit Complaint
+            </button>
+            <button type="button" style={{ color: "var(--pcs-gold-soft)" }}>
+              Profile
+            </button>
+            <Link to="/login" className="pcs-btn pcs-btn-gold pcs-btn-sm">
+              Logout
+            </Link>
           </div>
         </div>
+      </nav>
+
+      {/* ================= CONTENT ================= */}
+      <div className="pcs-container pcs-content-wrap">
+        {loading && (
+          <div className="pcs-loading">Loading your profile...</div>
+        )}
+
+        {!loading && !profile && (
+          <div className="pcs-error">Profile not found.</div>
+        )}
+
+        {!loading && profile && (
+          <>
+            <h1 className="pcs-page-title">My Profile</h1>
+            <p className="pcs-page-sub">
+              Manage your account details for the Public Complaint System
+            </p>
+
+            <div className="pcs-card">
+              <div className="pcs-card-header">
+                <div className="pcs-card-title">Personal Information</div>
+                {!editMode && (
+                  <button
+                    className="pcs-btn pcs-btn-primary pcs-btn-sm"
+                    onClick={() => setEditMode(true)}
+                  >
+                    ✎ Edit Profile
+                  </button>
+                )}
+              </div>
+
+              {/* Avatar */}
+              <div className="pcs-profile-avatar-wrap">
+                {previewImage || profile.profile_image ? (
+                  <img
+                    src={previewImage || profile.profile_image}
+                    alt="Profile"
+                    className="pcs-profile-avatar"
+                  />
+                ) : (
+                  <div className="pcs-profile-avatar-placeholder">
+                    {profile.name?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                )}
+
+                {!editMode && (
+                  <>
+                    <div className="pcs-profile-name">{profile.name}</div>
+                    <div className="pcs-profile-username">@{profile.username}</div>
+                  </>
+                )}
+              </div>
+
+              {/* ========== VIEW MODE ========== */}
+              {!editMode && (
+                <div className="pcs-info-grid">
+                  <div className="pcs-info-item">
+                    <div className="pcs-info-label">Full Name</div>
+                    <div className="pcs-info-value">{profile.name || "—"}</div>
+                  </div>
+                  <div className="pcs-info-item">
+                    <div className="pcs-info-label">Username</div>
+                    <div className="pcs-info-value">@{profile.username || "—"}</div>
+                  </div>
+                  <div className="pcs-info-item">
+                    <div className="pcs-info-label">Email</div>
+                    <div className="pcs-info-value">{profile.email || "—"}</div>
+                  </div>
+                  <div className="pcs-info-item">
+                    <div className="pcs-info-label">Phone</div>
+                    <div className="pcs-info-value">{profile.phone || "—"}</div>
+                  </div>
+                  <div className="pcs-info-item full">
+                    <div className="pcs-info-label">Address</div>
+                    <div className="pcs-info-value">
+                      {profile.address || "Address not provided"}
+                    </div>
+                  </div>
+                  <div className="pcs-info-item">
+                    <div className="pcs-info-label">Registered On</div>
+                    <div className="pcs-info-value">{profile.created_at || "—"}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* ========== EDIT MODE ========== */}
+              {editMode && (
+                <form onSubmit={handleUpdate}>
+                  <div className="pcs-field">
+                    <label className="pcs-label">Full Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      className="pcs-input"
+                      value={form.name}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="pcs-field">
+                    <label className="pcs-label">Username</label>
+                    <input
+                      type="text"
+                      className="pcs-input"
+                      value={profile.username}
+                      disabled
+                    />
+                    <div className="pcs-help-text">Username cannot be changed.</div>
+                  </div>
+
+                  <div className="pcs-field">
+                    <label className="pcs-label">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      className="pcs-input"
+                      value={form.email}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="pcs-field">
+                    <label className="pcs-label">Phone</label>
+                    <input
+                      type="text"
+                      name="phone"
+                      className="pcs-input"
+                      value={form.phone}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="pcs-field">
+                    <label className="pcs-label">Address</label>
+                    <textarea
+                      name="address"
+                      className="pcs-textarea"
+                      value={form.address}
+                      onChange={handleChange}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="pcs-field">
+                    <label className="pcs-label">Change Profile Image</label>
+                    <input
+                      type="file"
+                      className="pcs-input"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                  </div>
+
+                  <div className="pcs-actions-row">
+                    <button
+                      type="submit"
+                      className="pcs-btn pcs-btn-primary"
+                      disabled={saving}
+                    >
+                      {saving ? "Saving..." : "💾 Save Changes"}
+                    </button>
+                    <button
+                      type="button"
+                      className="pcs-btn pcs-btn-outline"
+                      onClick={handleCancel}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
