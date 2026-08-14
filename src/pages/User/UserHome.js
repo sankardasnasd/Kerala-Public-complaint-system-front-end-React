@@ -18,19 +18,28 @@ const UserHome = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
-  // Complaints state
+  // Profile
+  const [profile, setProfile] = useState(null);
+
+  // Complaints
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Notifications state
+  // Notifications
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifLoading, setNotifLoading] = useState(true);
 
+  // Feedback
+  const [rating, setRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState("");
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
   const userId = localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
 
-  // ---------- Helper: format time ----------
+  // ---------- Format time ----------
   const formatTime = (dateStr) => {
     if (!dateStr) return "";
     const date = new Date(dateStr);
@@ -50,6 +59,21 @@ const UserHome = () => {
       year: "numeric",
     });
   };
+
+  // ---------- Fetch Profile ----------
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await API.get("view_my_profile/");
+        if (res.data.status === "success") {
+          setProfile(res.data.data);
+        }
+      } catch (err) {
+        console.error("Profile load error:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   // ---------- Fetch Complaints ----------
   useEffect(() => {
@@ -74,7 +98,7 @@ const UserHome = () => {
             category: c.category || "—",
             description: c.description || "",
             location: c.location || "—",
-            status: c.status || "Pending",
+            status: c.status || "SUBMITTED",
             department: c.department || "—",
             assigned: c.assigned_staff || "—",
             priority: c.priority || "—",
@@ -92,6 +116,7 @@ const UserHome = () => {
             assigned_at: c.assigned_at,
             resolved_at: c.resolved_at,
             closed_at: c.closed_at,
+            has_feedback: c.has_feedback || false,
           }));
           setComplaints(mapped);
         } else {
@@ -135,16 +160,67 @@ const UserHome = () => {
     fetchNotifications();
   }, [userId]);
 
-  // ---------- Derived stats ----------
-  const total = complaints.length;
-  const inProgress = complaints.filter((c) => c.status === "In Progress").length;
-  const resolved = complaints.filter((c) => c.status === "Resolved").length;
-  const pending = complaints.filter((c) => c.status === "Pending").length;
+  // ---------- Submit Feedback ----------
+  const handleSubmitFeedback = async () => {
+    if (rating < 1 || rating > 5) {
+      alert("Please select a rating (1 to 5 stars)");
+      return;
+    }
 
+    try {
+      setSubmittingFeedback(true);
+
+      const formData = new FormData();
+      formData.append("complaint_id", selectedComplaint.id);
+      formData.append("user_id", userId);
+      formData.append("rating", rating);
+      formData.append("comment", feedbackComment);
+
+      const res = await API.post("submit_feedback/", formData);
+
+      if (res.data.status === "success") {
+        alert("Thank you! Your feedback has been submitted.");
+        setFeedbackSubmitted(true);
+        setRating(0);
+        setFeedbackComment("");
+      } else {
+        alert(res.data.message || "Failed to submit feedback");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to submit feedback");
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
+  // ---------- Helpers ----------
   const statusColor = (status) => {
-    if (status === "Resolved") return "var(--pcs-mid-green)";
-    if (status === "In Progress") return "var(--pcs-gold)";
-    return "var(--pcs-laterite)";
+    const s = (status || "").toUpperCase();
+    if (["RESOLVED", "CLOSED"].includes(s)) return "var(--pcs-mid-green)";
+    if (["IN_PROGRESS", "ASSIGNED", "VERIFIED"].includes(s)) return "var(--pcs-gold)";
+    if (s === "REJECTED") return "var(--pcs-laterite)";
+    return "var(--pcs-deep-green)";
+  };
+
+  const isResolved = (status) =>
+    ["RESOLVED", "CLOSED"].includes((status || "").toUpperCase());
+
+  const total = complaints.length;
+  const inProgress = complaints.filter((c) =>
+    ["IN_PROGRESS", "ASSIGNED", "VERIFIED"].includes((c.status || "").toUpperCase())
+  ).length;
+  const resolved = complaints.filter((c) => isResolved(c.status)).length;
+  const pending = complaints.filter((c) =>
+    ["SUBMITTED", "PENDING"].includes((c.status || "").toUpperCase())
+  ).length;
+
+  const openComplaint = (c) => {
+    setSelectedComplaint(c);
+    setActiveTab("complaints");
+    setFeedbackSubmitted(c.has_feedback || false);
+    setRating(0);
+    setFeedbackComment("");
   };
 
   return (
@@ -184,7 +260,6 @@ const UserHome = () => {
           font-family: 'Fraunces', serif;
         }
 
-        /* -------- NAV -------- */
         .pcs-nav {
           background: var(--pcs-deep-green);
           padding: 14px 0;
@@ -204,7 +279,7 @@ const UserHome = () => {
           display: flex;
           align-items: center;
           gap: 10px;
-          color: var(--pcs-cream);
+          color: #fff;
           font-family: 'Fraunces', serif;
           font-weight: 600;
           font-size: 17px;
@@ -282,7 +357,11 @@ const UserHome = () => {
           font-size: 12.5px;
         }
 
-        /* -------- LAYOUT -------- */
+        .pcs-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
         .pcs-main {
           display: grid;
           grid-template-columns: 240px 1fr;
@@ -291,7 +370,6 @@ const UserHome = () => {
           min-height: calc(100vh - 60px);
         }
 
-        /* -------- SIDEBAR -------- */
         .pcs-sidebar {
           background: #FFFFFF;
           border: 1px solid #ECE7D9;
@@ -319,7 +397,16 @@ const UserHome = () => {
           align-items: center;
           justify-content: center;
           margin: 0 auto 10px;
-          font-size: 26px;
+          font-size: 22px;
+          font-weight: 600;
+          color: var(--pcs-deep-green);
+          overflow: hidden;
+        }
+
+        .pcs-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
 
         .pcs-user-name {
@@ -378,7 +465,6 @@ const UserHome = () => {
           margin-left: auto;
         }
 
-        /* -------- CONTENT -------- */
         .pcs-content {
           min-width: 0;
         }
@@ -396,7 +482,6 @@ const UserHome = () => {
           margin-bottom: 24px;
         }
 
-        /* Stats */
         .pcs-stats-row {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -424,7 +509,6 @@ const UserHome = () => {
           color: var(--pcs-muted);
         }
 
-        /* Cards */
         .pcs-card {
           background: #FFFFFF;
           border: 1px solid #ECE7D9;
@@ -443,7 +527,6 @@ const UserHome = () => {
           justify-content: space-between;
         }
 
-        /* Complaint list */
         .pcs-complaint-item {
           display: grid;
           grid-template-columns: 1fr auto;
@@ -485,7 +568,6 @@ const UserHome = () => {
           white-space: nowrap;
         }
 
-        /* Detail view */
         .pcs-detail-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -506,69 +588,6 @@ const UserHome = () => {
           font-weight: 500;
         }
 
-        .pcs-actions-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          margin-top: 18px;
-        }
-
-        /* Chat */
-        .pcs-chat-box {
-          background: var(--pcs-cream);
-          border-radius: 10px;
-          padding: 16px;
-          max-height: 260px;
-          overflow-y: auto;
-          margin-bottom: 12px;
-        }
-
-        .pcs-chat-msg {
-          margin-bottom: 12px;
-          max-width: 80%;
-        }
-
-        .pcs-chat-msg.staff {
-          margin-right: auto;
-        }
-
-        .pcs-chat-msg.user {
-          margin-left: auto;
-          text-align: right;
-        }
-
-        .pcs-chat-bubble {
-          display: inline-block;
-          padding: 9px 13px;
-          border-radius: 12px;
-          font-size: 13.5px;
-          line-height: 1.45;
-        }
-
-        .pcs-chat-msg.staff .pcs-chat-bubble {
-          background: #FFFFFF;
-          border: 1px solid #E5E0D4;
-        }
-
-        .pcs-chat-msg.user .pcs-chat-bubble {
-          background: var(--pcs-deep-green);
-          color: var(--pcs-cream);
-        }
-
-        .pcs-chat-meta {
-          font-size: 11px;
-          color: var(--pcs-muted);
-          margin-top: 3px;
-        }
-
-        .pcs-chat-input-row {
-          display: flex;
-          gap: 10px;
-        }
-
-        .pcs-chat-input-row .pcs-input { flex: 1; }
-
-        /* Rating */
         .pcs-stars {
           display: flex;
           gap: 6px;
@@ -576,15 +595,17 @@ const UserHome = () => {
         }
 
         .pcs-star {
-          font-size: 26px;
+          font-size: 28px;
           cursor: pointer;
           color: #DDE3DB;
           transition: color 0.1s;
+          user-select: none;
         }
 
-        .pcs-star.active { color: var(--pcs-gold); }
+        .pcs-star.active {
+          color: var(--pcs-gold);
+        }
 
-        /* Empty / Loading / Error */
         .pcs-empty, .pcs-loading, .pcs-error {
           text-align: center;
           padding: 40px 20px;
@@ -593,7 +614,6 @@ const UserHome = () => {
         }
         .pcs-error { color: var(--pcs-laterite); }
 
-        /* Image in detail */
         .pcs-complaint-image {
           max-width: 100%;
           max-height: 280px;
@@ -613,6 +633,17 @@ const UserHome = () => {
           color: var(--pcs-ink);
         }
 
+        .pcs-input:focus, .pcs-select:focus, .pcs-textarea:focus {
+          outline: none;
+          border-color: var(--pcs-gold);
+          box-shadow: 0 0 0 3px rgba(201, 154, 59, 0.15);
+        }
+
+        .pcs-textarea {
+          resize: vertical;
+          min-height: 90px;
+        }
+
         .pcs-field {
           margin-bottom: 16px;
         }
@@ -627,7 +658,6 @@ const UserHome = () => {
           margin-bottom: 6px;
         }
 
-        /* Notifications */
         .pcs-notif-item {
           display: flex;
           gap: 12px;
@@ -658,7 +688,6 @@ const UserHome = () => {
         .pcs-notif-text {
           font-size: 13.5px;
           line-height: 1.45;
-          color: var(--pcs-ink);
         }
 
         .pcs-notif-time {
@@ -678,11 +707,8 @@ const UserHome = () => {
           margin-left: 8px;
         }
 
-        /* -------- RESPONSIVE -------- */
         @media (max-width: 900px) {
-          .pcs-main {
-            grid-template-columns: 1fr;
-          }
+          .pcs-main { grid-template-columns: 1fr; }
           .pcs-sidebar {
             position: static;
             display: flex;
@@ -720,36 +746,32 @@ const UserHome = () => {
         }
       `}</style>
 
-      {/* ================= NAVBAR ================= */}
+      {/* NAVBAR */}
       <nav className="pcs-nav">
         <div className="pcs-container pcs-nav-row">
-          <Link className="pcs-brand-link" to="/">
-            <LampMark />
-            Public Complaint System
+          <Link className="pcs-brand-link" to="/" style={{ color: "#fff" }}>
+            <LampMark /> Public Complaint System
           </Link>
 
           <button
             className="pcs-nav-toggle"
             type="button"
             onClick={() => setNavOpen((o) => !o)}
-            aria-label="Toggle menu"
           >
             ☰
           </button>
 
           <div className={`pcs-nav-links ${navOpen ? "open" : ""}`}>
-            <button type="button" onClick={() => { setActiveTab("dashboard"); setSelectedComplaint(null); }}>
+            <button onClick={() => { setActiveTab("dashboard"); setSelectedComplaint(null); }}>
               Dashboard
             </button>
-            <button type="button" onClick={() => { setActiveTab("complaints"); setSelectedComplaint(null); }}>
+            <button onClick={() => { setActiveTab("complaints"); setSelectedComplaint(null); }}>
               My Complaints
             </button>
-            <button type="button" onClick={() => setActiveTab("notifications")}>
+            <button onClick={() => setActiveTab("notifications")}>
               Notifications {unreadCount > 0 && `(${unreadCount})`}
             </button>
-            <button type="button" onClick={() => navigate("/user/profile")}>
-              Profile
-            </button>
+            <button onClick={() => navigate("/user/profile")}>Profile</button>
             <Link to="/login" className="pcs-btn pcs-btn-gold pcs-btn-sm">
               Logout
             </Link>
@@ -757,14 +779,24 @@ const UserHome = () => {
         </div>
       </nav>
 
-      {/* ================= MAIN ================= */}
+      {/* MAIN */}
       <div className="pcs-container pcs-main">
-        {/* Sidebar */}
+        {/* SIDEBAR */}
         <aside className="pcs-sidebar">
           <div className="pcs-user-card">
-            <div className="pcs-avatar">👤</div>
-            <div className="pcs-user-name">Anand Krishnan</div>
-            <div className="pcs-user-role">Citizen · Ward 7</div>
+            <div className="pcs-avatar">
+              {profile?.profile_image ? (
+                <img src={profile.profile_image} alt="Avatar" />
+              ) : (
+                (profile?.name?.charAt(0) || "U").toUpperCase()
+              )}
+            </div>
+            <div className="pcs-user-name">
+              {profile?.name || "User"}
+            </div>
+            <div className="pcs-user-role">
+              @{profile?.username || "citizen"}
+            </div>
           </div>
 
           <button
@@ -793,30 +825,28 @@ const UserHome = () => {
             onClick={() => setActiveTab("notifications")}
           >
             <span className="pcs-side-icon">🔔</span> Notifications
-            {unreadCount > 0 && (
-              <span className="pcs-badge-count">{unreadCount}</span>
-            )}
+            {unreadCount > 0 && <span className="pcs-badge-count">{unreadCount}</span>}
           </button>
 
           <button
-            className={`pcs-side-link ${activeTab === "profile" ? "active" : ""}`}
+            className="pcs-side-link"
             onClick={() => navigate("/user/profile")}
           >
             <span className="pcs-side-icon">👤</span> Profile
           </button>
         </aside>
 
-        {/* Content Area */}
+        {/* CONTENT */}
         <div className="pcs-content">
-
-          {/* ========== LOADING / ERROR ========== */}
           {loading && <div className="pcs-loading">Loading your complaints...</div>}
           {error && !loading && <div className="pcs-error">{error}</div>}
 
-          {/* ========== DASHBOARD ========== */}
+          {/* DASHBOARD */}
           {!loading && !error && activeTab === "dashboard" && !selectedComplaint && (
             <>
-              <h1 className="pcs-page-title">Welcome back</h1>
+              <h1 className="pcs-page-title">
+                Welcome back{profile?.name ? `, ${profile.name.split(" ")[0]}` : ""}
+              </h1>
               <p className="pcs-page-sub">Here’s an overview of your complaints and recent activity.</p>
 
               <div className="pcs-stats-row">
@@ -856,10 +886,7 @@ const UserHome = () => {
                     <div
                       key={c.id}
                       className="pcs-complaint-item"
-                      onClick={() => {
-                        setSelectedComplaint(c);
-                        setActiveTab("complaints");
-                      }}
+                      onClick={() => openComplaint(c)}
                     >
                       <div>
                         <div className="pcs-cmp-id">
@@ -881,7 +908,6 @@ const UserHome = () => {
                 )}
               </div>
 
-              {/* Latest Notifications */}
               <div className="pcs-card">
                 <div className="pcs-card-title">
                   Latest Notifications
@@ -917,7 +943,7 @@ const UserHome = () => {
             </>
           )}
 
-          {/* ========== COMPLAINT LIST ========== */}
+          {/* COMPLAINT LIST */}
           {!loading && !error && activeTab === "complaints" && !selectedComplaint && (
             <>
               <h1 className="pcs-page-title">My Complaints</h1>
@@ -941,7 +967,7 @@ const UserHome = () => {
                     <div
                       key={c.id}
                       className="pcs-complaint-item"
-                      onClick={() => setSelectedComplaint(c)}
+                      onClick={() => openComplaint(c)}
                     >
                       <div>
                         <div className="pcs-cmp-id">
@@ -965,7 +991,7 @@ const UserHome = () => {
             </>
           )}
 
-          {/* ========== COMPLAINT DETAIL ========== */}
+          {/* COMPLAINT DETAIL */}
           {selectedComplaint && (
             <>
               <button
@@ -1041,7 +1067,7 @@ const UserHome = () => {
                     <div className="pcs-detail-label">Attached Image</div>
                     <img
                       src={selectedComplaint.image}
-                      alt="Complaint attachment"
+                      alt="Complaint"
                       className="pcs-complaint-image"
                     />
                   </div>
@@ -1067,46 +1093,61 @@ const UserHome = () => {
                     )}
                   </div>
                 )}
-
-                <div className="pcs-actions-row">
-                  {selectedComplaint.status === "In Progress" && (
-                    <>
-                      <button className="pcs-btn pcs-btn-outline pcs-btn-sm">Add Additional Info</button>
-                      <button className="pcs-btn pcs-btn-outline pcs-btn-sm">Chat with Staff</button>
-                    </>
-                  )}
-                  {selectedComplaint.status === "Resolved" && (
-                    <>
-                      <button className="pcs-btn pcs-btn-primary pcs-btn-sm">Confirm Resolution</button>
-                      <button className="pcs-btn pcs-btn-outline pcs-btn-sm">Reopen Complaint</button>
-                      <button className="pcs-btn pcs-btn-outline pcs-btn-sm">Give Feedback</button>
-                    </>
-                  )}
-                  {selectedComplaint.status === "Pending" && (
-                    <button className="pcs-btn pcs-btn-outline pcs-btn-sm">Add Additional Info</button>
-                  )}
-                </div>
               </div>
 
-              <div className="pcs-card">
-                <div className="pcs-card-title">Communication with Staff</div>
-                <div className="pcs-chat-box">
-                  <div className="pcs-chat-msg staff">
-                    <div className="pcs-chat-bubble">
-                      We have received your complaint and assigned it to the relevant team.
+              {/* FEEDBACK */}
+              {isResolved(selectedComplaint.status) && (
+                <div className="pcs-card">
+                  <div className="pcs-card-title">⭐ Give Feedback</div>
+
+                  {feedbackSubmitted ? (
+                    <div style={{ color: "var(--pcs-mid-green)", fontWeight: 500, fontSize: "15px" }}>
+                      ✓ Thank you! Your feedback has been submitted.
                     </div>
-                    <div className="pcs-chat-meta">Staff · system</div>
-                  </div>
+                  ) : (
+                    <>
+                      <p style={{ fontSize: "13.5px", color: "var(--pcs-muted)", marginBottom: "8px" }}>
+                        How satisfied are you with the resolution of this complaint?
+                      </p>
+
+                      <div className="pcs-stars">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span
+                            key={star}
+                            className={`pcs-star ${star <= rating ? "active" : ""}`}
+                            onClick={() => setRating(star)}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="pcs-field">
+                        <label className="pcs-label">Your Comment (optional)</label>
+                        <textarea
+                          className="pcs-textarea"
+                          rows={3}
+                          value={feedbackComment}
+                          onChange={(e) => setFeedbackComment(e.target.value)}
+                          placeholder="Share your experience with the resolution..."
+                        />
+                      </div>
+
+                      <button
+                        className="pcs-btn pcs-btn-primary"
+                        onClick={handleSubmitFeedback}
+                        disabled={submittingFeedback || rating === 0}
+                      >
+                        {submittingFeedback ? "Submitting..." : "Submit Feedback"}
+                      </button>
+                    </>
+                  )}
                 </div>
-                <div className="pcs-chat-input-row">
-                  <input className="pcs-input" type="text" placeholder="Type a message..." />
-                  <button className="pcs-btn pcs-btn-primary">Send</button>
-                </div>
-              </div>
+              )}
             </>
           )}
 
-          {/* ========== NOTIFICATIONS TAB ========== */}
+          {/* NOTIFICATIONS */}
           {activeTab === "notifications" && (
             <>
               <h1 className="pcs-page-title">Notifications</h1>

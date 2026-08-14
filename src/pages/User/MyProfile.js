@@ -29,7 +29,7 @@ const MyProfile = () => {
   const [editMode, setEditMode] = useState(false);
 
   // ==============================
-  // GET LOGGED-IN USER PROFILE
+  // LOAD PROFILE
   // ==============================
   const loadProfile = async () => {
     try {
@@ -59,13 +59,10 @@ const MyProfile = () => {
   }, []);
 
   // ==============================
-  // HANDLE INPUT
+  // HANDLERS
   // ==============================
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleImageChange = (e) => {
@@ -111,9 +108,6 @@ const MyProfile = () => {
     }
   };
 
-  // ==============================
-  // CANCEL EDIT
-  // ==============================
   const handleCancel = () => {
     setEditMode(false);
     setProfileImage(null);
@@ -154,7 +148,7 @@ const MyProfile = () => {
         .pcs-page a { text-decoration: none; color: inherit; }
 
         .pcs-container {
-          max-width: 900px;
+          max-width: 1180px;
           margin: 0 auto;
           padding: 0 24px;
         }
@@ -163,7 +157,7 @@ const MyProfile = () => {
           font-family: 'Fraunces', serif;
         }
 
-        /* -------- NAV -------- */
+        /* NAV - same as homepage */
         .pcs-nav {
           background: var(--pcs-deep-green);
           padding: 14px 0;
@@ -206,7 +200,8 @@ const MyProfile = () => {
           gap: 22px;
         }
 
-        .pcs-nav-links a, .pcs-nav-links button {
+        .pcs-nav-links a,
+        .pcs-nav-links button {
           color: rgba(251, 246, 236, 0.82);
           font-size: 14px;
           font-weight: 500;
@@ -216,7 +211,8 @@ const MyProfile = () => {
           font-family: inherit;
         }
 
-        .pcs-nav-links a:hover, .pcs-nav-links button:hover {
+        .pcs-nav-links a:hover,
+        .pcs-nav-links button:hover {
           color: var(--pcs-gold-soft);
         }
 
@@ -261,9 +257,105 @@ const MyProfile = () => {
           font-size: 12.5px;
         }
 
-        /* -------- CONTENT -------- */
-        .pcs-content-wrap {
-          padding: 36px 0 60px;
+        .pcs-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        /* LAYOUT - same as homepage */
+        .pcs-main {
+          display: grid;
+          grid-template-columns: 240px 1fr;
+          gap: 28px;
+          padding: 28px 0 48px;
+          min-height: calc(100vh - 60px);
+        }
+
+        .pcs-sidebar {
+          background: #FFFFFF;
+          border: 1px solid #ECE7D9;
+          border-radius: 14px;
+          padding: 20px 14px;
+          height: fit-content;
+          position: sticky;
+          top: 80px;
+        }
+
+        .pcs-user-card {
+          text-align: center;
+          padding: 12px 8px 18px;
+          border-bottom: 1px solid #ECE7D9;
+          margin-bottom: 14px;
+        }
+
+        .pcs-avatar {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          background: var(--pcs-cream);
+          border: 2.5px solid var(--pcs-gold);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 10px;
+          font-size: 26px;
+          overflow: hidden;
+        }
+
+        .pcs-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .pcs-user-name {
+          font-weight: 600;
+          font-size: 15px;
+          color: var(--pcs-deep-green);
+        }
+
+        .pcs-user-role {
+          font-size: 12px;
+          color: var(--pcs-muted);
+          margin-top: 2px;
+        }
+
+        .pcs-side-link {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 12px;
+          border-radius: 9px;
+          font-size: 13.5px;
+          font-weight: 500;
+          color: var(--pcs-ink);
+          cursor: pointer;
+          transition: background 0.12s ease;
+          border: none;
+          background: none;
+          width: 100%;
+          text-align: left;
+          font-family: inherit;
+        }
+
+        .pcs-side-link:hover {
+          background: rgba(30, 92, 62, 0.07);
+        }
+
+        .pcs-side-link.active {
+          background: rgba(30, 92, 62, 0.12);
+          color: var(--pcs-deep-green);
+          font-weight: 600;
+        }
+
+        .pcs-side-icon {
+          width: 20px;
+          text-align: center;
+          font-size: 15px;
+        }
+
+        .pcs-content {
+          min-width: 0;
         }
 
         .pcs-page-title {
@@ -276,7 +368,72 @@ const MyProfile = () => {
         .pcs-page-sub {
           font-size: 14px;
           color: var(--pcs-muted);
-          margin-bottom: 28px;
+          margin-bottom: 24px;
+        }
+
+        /* Profile Hero Card */
+        .pcs-profile-hero {
+          background: #FFFFFF;
+          border: 1px solid #ECE7D9;
+          border-radius: 16px;
+          padding: 32px 28px;
+          margin-bottom: 20px;
+          display: flex;
+          align-items: center;
+          gap: 28px;
+        }
+
+        .pcs-profile-hero-avatar {
+          width: 110px;
+          height: 110px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 3px solid var(--pcs-gold);
+          box-shadow: 0 4px 16px rgba(16, 51, 31, 0.12);
+          flex-shrink: 0;
+        }
+
+        .pcs-profile-hero-placeholder {
+          width: 110px;
+          height: 110px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, var(--pcs-cream), #F0EBD8);
+          border: 3px solid var(--pcs-gold);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 42px;
+          font-weight: 700;
+          color: var(--pcs-deep-green);
+          font-family: 'Fraunces', serif;
+          flex-shrink: 0;
+        }
+
+        .pcs-profile-hero-info h2 {
+          font-size: 22px;
+          font-weight: 700;
+          color: var(--pcs-deep-green);
+          margin-bottom: 4px;
+        }
+
+        .pcs-profile-hero-info .username {
+          font-size: 14px;
+          color: var(--pcs-muted);
+          margin-bottom: 12px;
+        }
+
+        .pcs-profile-hero-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 16px;
+          font-size: 13.5px;
+          color: var(--pcs-ink);
+        }
+
+        .pcs-profile-hero-meta span {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
         }
 
         /* Card */
@@ -284,67 +441,18 @@ const MyProfile = () => {
           background: #FFFFFF;
           border: 1px solid #ECE7D9;
           border-radius: 14px;
-          padding: 28px;
+          padding: 24px;
           margin-bottom: 20px;
         }
 
-        .pcs-card-header {
+        .pcs-card-title {
+          font-size: 17px;
+          font-weight: 600;
+          color: var(--pcs-deep-green);
+          margin-bottom: 18px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 24px;
-          padding-bottom: 16px;
-          border-bottom: 1px solid #ECE7D9;
-        }
-
-        .pcs-card-title {
-          font-size: 18px;
-          font-weight: 600;
-          color: var(--pcs-deep-green);
-        }
-
-        /* Profile image */
-        .pcs-profile-avatar-wrap {
-          text-align: center;
-          margin-bottom: 28px;
-        }
-
-        .pcs-profile-avatar {
-          width: 130px;
-          height: 130px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 3px solid var(--pcs-gold);
-          box-shadow: 0 4px 14px rgba(16, 51, 31, 0.12);
-        }
-
-        .pcs-profile-avatar-placeholder {
-          width: 130px;
-          height: 130px;
-          border-radius: 50%;
-          background: var(--pcs-cream);
-          border: 3px solid var(--pcs-gold);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto;
-          font-size: 48px;
-          font-weight: 600;
-          color: var(--pcs-deep-green);
-          font-family: 'Fraunces', serif;
-        }
-
-        .pcs-profile-name {
-          font-size: 20px;
-          font-weight: 600;
-          color: var(--pcs-deep-green);
-          margin-top: 14px;
-        }
-
-        .pcs-profile-username {
-          font-size: 13.5px;
-          color: var(--pcs-muted);
-          margin-top: 2px;
         }
 
         /* Info grid */
@@ -394,7 +502,8 @@ const MyProfile = () => {
           margin-bottom: 6px;
         }
 
-        .pcs-input, .pcs-textarea {
+        .pcs-input,
+        .pcs-textarea {
           width: 100%;
           padding: 11px 13px;
           font-size: 14px;
@@ -406,7 +515,8 @@ const MyProfile = () => {
           transition: border-color 0.15s, box-shadow 0.15s;
         }
 
-        .pcs-input:focus, .pcs-textarea:focus {
+        .pcs-input:focus,
+        .pcs-textarea:focus {
           outline: none;
           border-color: var(--pcs-gold);
           box-shadow: 0 0 0 3px rgba(201, 154, 59, 0.15);
@@ -433,21 +543,56 @@ const MyProfile = () => {
           display: flex;
           flex-wrap: wrap;
           gap: 12px;
-          margin-top: 10px;
+          margin-top: 8px;
         }
 
-        /* Loading / Error */
-        .pcs-loading, .pcs-error {
+        .pcs-loading,
+        .pcs-error {
           text-align: center;
           padding: 80px 20px;
           color: var(--pcs-muted);
           font-size: 15px;
         }
-        .pcs-error { color: var(--pcs-laterite); }
 
-        /* -------- RESPONSIVE -------- */
+        .pcs-error {
+          color: var(--pcs-laterite);
+        }
+
+        @media (max-width: 900px) {
+          .pcs-main {
+            grid-template-columns: 1fr;
+          }
+          .pcs-sidebar {
+            position: static;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 14px;
+          }
+          .pcs-user-card {
+            display: none;
+          }
+          .pcs-side-link {
+            width: auto;
+            padding: 8px 12px;
+            font-size: 13px;
+          }
+          .pcs-profile-hero {
+            flex-direction: column;
+            text-align: center;
+          }
+          .pcs-profile-hero-meta {
+            justify-content: center;
+          }
+          .pcs-info-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
         @media (max-width: 640px) {
-          .pcs-nav-toggle { display: inline-block; }
+          .pcs-nav-toggle {
+            display: inline-block;
+          }
           .pcs-nav-links {
             position: absolute;
             top: 56px;
@@ -461,30 +606,27 @@ const MyProfile = () => {
             display: none;
             border-top: 1px solid rgba(228, 200, 120, 0.2);
           }
-          .pcs-nav-links.open { display: flex; }
-          .pcs-info-grid { grid-template-columns: 1fr; }
+          .pcs-nav-links.open {
+            display: flex;
+          }
         }
       `}</style>
 
       {/* ================= NAVBAR ================= */}
       <nav className="pcs-nav">
         <div className="pcs-container pcs-nav-row">
-          <Link className="pcs-brand-link" to="/">
-            <LampMark />
-            Public Complaint System
-          </Link>
-
+                  <Link  className="pcs-brand-link" to="/" style={{ color: '#fff' }}><LampMark />Public Complaint System</Link>
+         
           <button
             className="pcs-nav-toggle"
             type="button"
             onClick={() => setNavOpen((o) => !o)}
-            aria-label="Toggle menu"
           >
             ☰
           </button>
 
           <div className={`pcs-nav-links ${navOpen ? "open" : ""}`}>
-            <button type="button" onClick={() => navigate("/user/home")}>
+            <button type="button" onClick={() => navigate("/user")}>
               Dashboard
             </button>
             <button type="button" onClick={() => navigate("/user/my-complaints")}>
@@ -503,182 +645,246 @@ const MyProfile = () => {
         </div>
       </nav>
 
-      {/* ================= CONTENT ================= */}
-      <div className="pcs-container pcs-content-wrap">
-        {loading && (
-          <div className="pcs-loading">Loading your profile...</div>
-        )}
+      {/* ================= MAIN ================= */}
+      <div className="pcs-container pcs-main">
+        {/* SIDEBAR - same as homepage */}
+        <aside className="pcs-sidebar">
+          <div className="pcs-user-card">
+            <div className="pcs-avatar">
+              {profile?.profile_image ? (
+                <img src={profile.profile_image} alt="Avatar" />
+              ) : (
+                "👤"
+              )}
+            </div>
+            <div className="pcs-user-name">
+              {profile?.name || "Citizen"}
+            </div>
+            <div className="pcs-user-role">
+              @{profile?.username || "user"}
+            </div>
+          </div>
 
-        {!loading && !profile && (
-          <div className="pcs-error">Profile not found.</div>
-        )}
+          <button
+            className="pcs-side-link"
+            onClick={() => navigate("/user")}
+          >
+            <span className="pcs-side-icon">🏠</span> Dashboard
+          </button>
 
-        {!loading && profile && (
-          <>
-            <h1 className="pcs-page-title">My Profile</h1>
-            <p className="pcs-page-sub">
-              Manage your account details for the Public Complaint System
-            </p>
+          <button
+            className="pcs-side-link"
+            onClick={() => navigate("/user/submit-complaint")}
+          >
+            <span className="pcs-side-icon">📝</span> Submit Complaint
+          </button>
 
-            <div className="pcs-card">
-              <div className="pcs-card-header">
-                <div className="pcs-card-title">Personal Information</div>
-                {!editMode && (
-                  <button
-                    className="pcs-btn pcs-btn-primary pcs-btn-sm"
-                    onClick={() => setEditMode(true)}
-                  >
-                    ✎ Edit Profile
-                  </button>
-                )}
-              </div>
+          <button
+            className="pcs-side-link"
+            onClick={() => navigate("/user/my-complaints")}
+          >
+            <span className="pcs-side-icon">📋</span> My Complaints
+          </button>
 
-              {/* Avatar */}
-              <div className="pcs-profile-avatar-wrap">
+          <button
+            className="pcs-side-link"
+            onClick={() => navigate("/user/notifications")}
+          >
+            <span className="pcs-side-icon">🔔</span> Notifications
+          </button>
+
+          <button className="pcs-side-link active">
+            <span className="pcs-side-icon">👤</span> Profile
+          </button>
+        </aside>
+
+        {/* CONTENT */}
+        <div className="pcs-content">
+          {loading && (
+            <div className="pcs-loading">Loading your profile...</div>
+          )}
+
+          {!loading && !profile && (
+            <div className="pcs-error">Profile not found.</div>
+          )}
+
+          {!loading && profile && (
+            <>
+              <h1 className="pcs-page-title">My Profile</h1>
+              <p className="pcs-page-sub">
+                Manage your account details for the Public Complaint System
+              </p>
+
+              {/* HERO */}
+              <div className="pcs-profile-hero">
                 {previewImage || profile.profile_image ? (
                   <img
                     src={previewImage || profile.profile_image}
                     alt="Profile"
-                    className="pcs-profile-avatar"
+                    className="pcs-profile-hero-avatar"
                   />
                 ) : (
-                  <div className="pcs-profile-avatar-placeholder">
+                  <div className="pcs-profile-hero-placeholder">
                     {profile.name?.charAt(0)?.toUpperCase() || "U"}
                   </div>
                 )}
 
-                {!editMode && (
-                  <>
-                    <div className="pcs-profile-name">{profile.name}</div>
-                    <div className="pcs-profile-username">@{profile.username}</div>
-                  </>
-                )}
-              </div>
-
-              {/* ========== VIEW MODE ========== */}
-              {!editMode && (
-                <div className="pcs-info-grid">
-                  <div className="pcs-info-item">
-                    <div className="pcs-info-label">Full Name</div>
-                    <div className="pcs-info-value">{profile.name || "—"}</div>
-                  </div>
-                  <div className="pcs-info-item">
-                    <div className="pcs-info-label">Username</div>
-                    <div className="pcs-info-value">@{profile.username || "—"}</div>
-                  </div>
-                  <div className="pcs-info-item">
-                    <div className="pcs-info-label">Email</div>
-                    <div className="pcs-info-value">{profile.email || "—"}</div>
-                  </div>
-                  <div className="pcs-info-item">
-                    <div className="pcs-info-label">Phone</div>
-                    <div className="pcs-info-value">{profile.phone || "—"}</div>
-                  </div>
-                  <div className="pcs-info-item full">
-                    <div className="pcs-info-label">Address</div>
-                    <div className="pcs-info-value">
-                      {profile.address || "Address not provided"}
-                    </div>
-                  </div>
-                  <div className="pcs-info-item">
-                    <div className="pcs-info-label">Registered On</div>
-                    <div className="pcs-info-value">{profile.created_at || "—"}</div>
+                <div className="pcs-profile-hero-info">
+                  <h2>{profile.name || "—"}</h2>
+                  <div className="username">@{profile.username || "—"}</div>
+                  <div className="pcs-profile-hero-meta">
+                    {profile.email && (
+                      <span>✉️ {profile.email}</span>
+                    )}
+                    {profile.phone && (
+                      <span>📱 {profile.phone}</span>
+                    )}
+                    {profile.created_at && (
+                      <span>📅 Joined {profile.created_at}</span>
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* ========== EDIT MODE ========== */}
-              {editMode && (
-                <form onSubmit={handleUpdate}>
-                  <div className="pcs-field">
-                    <label className="pcs-label">Full Name</label>
-                    <input
-                      type="text"
-                      name="name"
-                      className="pcs-input"
-                      value={form.name}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="pcs-field">
-                    <label className="pcs-label">Username</label>
-                    <input
-                      type="text"
-                      className="pcs-input"
-                      value={profile.username}
-                      disabled
-                    />
-                    <div className="pcs-help-text">Username cannot be changed.</div>
-                  </div>
-
-                  <div className="pcs-field">
-                    <label className="pcs-label">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      className="pcs-input"
-                      value={form.email}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="pcs-field">
-                    <label className="pcs-label">Phone</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      className="pcs-input"
-                      value={form.phone}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="pcs-field">
-                    <label className="pcs-label">Address</label>
-                    <textarea
-                      name="address"
-                      className="pcs-textarea"
-                      value={form.address}
-                      onChange={handleChange}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="pcs-field">
-                    <label className="pcs-label">Change Profile Image</label>
-                    <input
-                      type="file"
-                      className="pcs-input"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                    />
-                  </div>
-
-                  <div className="pcs-actions-row">
+              {/* DETAILS / EDIT */}
+              <div className="pcs-card">
+                <div className="pcs-card-title">
+                  Personal Information
+                  {!editMode && (
                     <button
-                      type="submit"
-                      className="pcs-btn pcs-btn-primary"
-                      disabled={saving}
+                      className="pcs-btn pcs-btn-primary pcs-btn-sm"
+                      onClick={() => setEditMode(true)}
                     >
-                      {saving ? "Saving..." : "💾 Save Changes"}
+                      ✎ Edit Profile
                     </button>
-                    <button
-                      type="button"
-                      className="pcs-btn pcs-btn-outline"
-                      onClick={handleCancel}
-                    >
-                      Cancel
-                    </button>
+                  )}
+                </div>
+
+                {/* VIEW MODE */}
+                {!editMode && (
+                  <div className="pcs-info-grid">
+                    <div className="pcs-info-item">
+                      <div className="pcs-info-label">Full Name</div>
+                      <div className="pcs-info-value">{profile.name || "—"}</div>
+                    </div>
+                    <div className="pcs-info-item">
+                      <div className="pcs-info-label">Username</div>
+                      <div className="pcs-info-value">@{profile.username || "—"}</div>
+                    </div>
+                    <div className="pcs-info-item">
+                      <div className="pcs-info-label">Email</div>
+                      <div className="pcs-info-value">{profile.email || "—"}</div>
+                    </div>
+                    <div className="pcs-info-item">
+                      <div className="pcs-info-label">Phone</div>
+                      <div className="pcs-info-value">{profile.phone || "—"}</div>
+                    </div>
+                    <div className="pcs-info-item full">
+                      <div className="pcs-info-label">Address</div>
+                      <div className="pcs-info-value">
+                        {profile.address || "Address not provided"}
+                      </div>
+                    </div>
+                    <div className="pcs-info-item">
+                      <div className="pcs-info-label">Registered On</div>
+                      <div className="pcs-info-value">{profile.created_at || "—"}</div>
+                    </div>
                   </div>
-                </form>
-              )}
-            </div>
-          </>
-        )}
+                )}
+
+                {/* EDIT MODE */}
+                {editMode && (
+                  <form onSubmit={handleUpdate}>
+                    <div className="pcs-field">
+                      <label className="pcs-label">Full Name</label>
+                      <input
+                        type="text"
+                        name="name"
+                        className="pcs-input"
+                        value={form.name}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+
+                    <div className="pcs-field">
+                      <label className="pcs-label">Username</label>
+                      <input
+                        type="text"
+                        className="pcs-input"
+                        value={profile.username}
+                        disabled
+                      />
+                      <div className="pcs-help-text">Username cannot be changed.</div>
+                    </div>
+
+                    <div className="pcs-field">
+                      <label className="pcs-label">Email</label>
+                      <input
+                        type="email"
+                        name="email"
+                        className="pcs-input"
+                        value={form.email}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+
+                    <div className="pcs-field">
+                      <label className="pcs-label">Phone</label>
+                      <input
+                        type="text"
+                        name="phone"
+                        className="pcs-input"
+                        value={form.phone}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+
+                    <div className="pcs-field">
+                      <label className="pcs-label">Address</label>
+                      <textarea
+                        name="address"
+                        className="pcs-textarea"
+                        value={form.address}
+                        onChange={handleChange}
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="pcs-field">
+                      <label className="pcs-label">Change Profile Image</label>
+                      <input
+                        type="file"
+                        className="pcs-input"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                      />
+                    </div>
+
+                    <div className="pcs-actions-row">
+                      <button
+                        type="submit"
+                        className="pcs-btn pcs-btn-primary"
+                        disabled={saving}
+                      >
+                        {saving ? "Saving..." : "💾 Save Changes"}
+                      </button>
+                      <button
+                        type="button"
+                        className="pcs-btn pcs-btn-outline"
+                        onClick={handleCancel}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

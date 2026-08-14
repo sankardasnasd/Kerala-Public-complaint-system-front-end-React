@@ -16,6 +16,7 @@ import MyProfile from "./pages/User/MyProfile";
 import SubmitComplaint from "./pages/User/SubmitComplaint";
 import MyComplaints from "./pages/User/MyComplaints";
 import ManageNotifications from "./pages/Admin/ManageNotifications";
+import StaffHome from "./pages/Staff/StaffHome";
 
 
 function App() {
@@ -43,6 +44,9 @@ function App() {
           <Route path="/user/profile" element={<MyProfile />}/>
           <Route path="/user/submit-complaint" element={<SubmitComplaint />}/>
           <Route path="/user/my-complaints" element={<MyComplaints />}/>
+
+
+          <Route path="/staff" element={<StaffHome/>} />
 
       </Routes>
     </BrowserRouter>
